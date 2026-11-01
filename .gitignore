@@ -1,0 +1,6 @@
+.vscode/
+*.p12
+*.pfx
+*.wgt
+__pycache__/
+.venv/
