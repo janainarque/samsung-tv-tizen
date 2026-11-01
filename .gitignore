@@ -4,3 +4,10 @@
 *.wgt
 __pycache__/
 .venv/
+
+Debug/
+Release/
+Build/
+Test/
+.tizen-rds/
+.buildResult/
