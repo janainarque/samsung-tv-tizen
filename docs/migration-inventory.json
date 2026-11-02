@@ -1,0 +1,561 @@
+{
+  "upstream": "https://github.com/simbasjungles/free-my-tv",
+  "commit": "a9e1027",
+  "files": [
+    {
+      "source": "migration/free-my-tv/LICENSE",
+      "target": "LICENSE",
+      "sha256": "98b361d2dcd6be41a9c50514b23a7304bb6c079e08cb46adee2175dbaea66b4c"
+    },
+    {
+      "source": "migration/free-my-tv/prepare_preview.py",
+      "target": "scripts/prepare_preview.py",
+      "sha256": "700409e6cbfa0b6984a411e32a2325d9596e2562affbc2a5365d7fb53bf0f5a8"
+    },
+    {
+      "source": "migration/free-my-tv/prepare_tizen.py",
+      "target": "scripts/prepare_tizen.py",
+      "sha256": "b10463b3eca42a0d6c866a62ef8ba10ed944b929ed3f161ec70cc879ac697060"
+    },
+    {
+      "source": "migration/free-my-tv/README.md",
+      "target": "docs/MIGRATION_PREPARATION.md",
+      "sha256": "e78a4d5e716f593a454b19f6e62ef8211d3cc407a806b0c81daf676be05133c4"
+    },
+    {
+      "source": "migration/free-my-tv/UPSTREAM_README.md",
+      "target": "docs/UPSTREAM_README.md",
+      "sha256": "6d6de1dc4d033e72fb8b9923b29a3b1504c115f06eae132e2b9ed7b905bc7d26"
+    },
+    {
+      "source": "migration/free-my-tv/tizen/config.xml",
+      "target": "tizen/config.xml",
+      "sha256": "ef5a9b44a4c19ae049bdcf4ef08116c00801a05013cef50f28d05a027954c06e"
+    },
+    {
+      "source": "migration/free-my-tv/tizen/icon.png",
+      "target": "tizen/icon.png",
+      "sha256": "e2454917cf8043eb8e8247b785da2919002d4a970600f0fc18ac45e62cca1769"
+    },
+    {
+      "source": "migration/free-my-tv/tools/translate.py",
+      "target": "scripts/translate.py",
+      "sha256": "9494431c000c7217d6c01c3c59b39cb13ff7c84dbc1ad6affa154c585dc65933"
+    },
+    {
+      "source": "migration/free-my-tv/tools/webapp.py",
+      "target": "scripts/webapp.py",
+      "sha256": "82b6c418d0d1a22624f9805fb3a2a399470d00afbfcde813ea15447686c5119a"
+    },
+    {
+      "source": "migration/free-my-tv/web/data.js",
+      "target": "web/data.js",
+      "sha256": "044bcb57d2ec28d34cf409530c8ce764e5dc8769e78b595ad57e6b7053d43afd"
+    },
+    {
+      "source": "migration/free-my-tv/web/home.css",
+      "target": "web/home.css",
+      "sha256": "764ae71fa8c41b0eb4ffbc4b22fc3ad06b86f137e005040742e5e7a63a747bfd"
+    },
+    {
+      "source": "migration/free-my-tv/web/home.js",
+      "target": "web/home.js",
+      "sha256": "390789e9ed6480fcf39ad681b4b49f1d621f08cc7a5bb97e19d2d28c4e248587"
+    },
+    {
+      "source": "migration/free-my-tv/web/index.html",
+      "target": "web/index.html",
+      "sha256": "c6ab43bea78da22fb628d46c47593b08c64d9b876e89845b83d59788f2a6f742"
+    },
+    {
+      "source": "migration/free-my-tv/web/strings.js",
+      "target": "web/strings.js",
+      "sha256": "c1beb700c7c730f516d7302591ac72ff207c33ab0f1e1403f4de91788dbdd10d"
+    },
+    {
+      "source": "migration/free-my-tv/web/tv.js",
+      "target": "web/tv.js",
+      "sha256": "f1e791ad2916ba9e04553cecdcb4627931f8cbd04d81285aa8d65a0fee2012cf"
+    },
+    {
+      "source": "migration/free-my-tv/web/zones.js",
+      "target": "web/zones.js",
+      "sha256": "0b2c1928020705748b9310f61406bb307ee4d1545026adb5cc96b22e73ad8ba5"
+    },
+    {
+      "source": "migration/free-my-tv/web/icons/appletv.svg",
+      "target": "web/icons/appletv.svg",
+      "sha256": "6fca9d31becf71c0dc383c08ad45558eb9c2c0120c12d64387a1a86fdf26598c"
+    },
+    {
+      "source": "migration/free-my-tv/web/icons/crunchyroll.svg",
+      "target": "web/icons/crunchyroll.svg",
+      "sha256": "855e85395a1db88f44c8ebaf106c38301724ae8a1158c88952b5e2628fb12626"
+    },
+    {
+      "source": "migration/free-my-tv/web/icons/deezer.svg",
+      "target": "web/icons/deezer.svg",
+      "sha256": "0e3065d60776a47bea883b98e4d06cae7de7e95211165748b0cba540660de6b9"
+    },
+    {
+      "source": "migration/free-my-tv/web/icons/fox.svg",
+      "target": "web/icons/fox.svg",
+      "sha256": "1cb83b488686a4ad3b2961522222b3998262379a30daa8ee2c72a8f3376f4473"
+    },
+    {
+      "source": "migration/free-my-tv/web/icons/googleplay.svg",
+      "target": "web/icons/googleplay.svg",
+      "sha256": "de27f446c6cd5acb50b8ee7050747741a2e03bd6f9b373eea5b28e58549e1a95"
+    },
+    {
+      "source": "migration/free-my-tv/web/icons/jellyfin.svg",
+      "target": "web/icons/jellyfin.svg",
+      "sha256": "1384aff21672be47a4432cc3e74ebfea6d61397e2b9862cb1a4a64780925df8b"
+    },
+    {
+      "source": "migration/free-my-tv/web/icons/max.svg",
+      "target": "web/icons/max.svg",
+      "sha256": "0175f7682c3f14c056a9b13219ebe2f8a00700ab8fcb1d8755c995f659c358e4"
+    },
+    {
+      "source": "migration/free-my-tv/web/icons/netflix.svg",
+      "target": "web/icons/netflix.svg",
+      "sha256": "fd933810b8367cd8950fe2c8c063d7fe2ccc0825ae8ec7d9748922839a3d5aca"
+    },
+    {
+      "source": "migration/free-my-tv/web/icons/paramountplus.svg",
+      "target": "web/icons/paramountplus.svg",
+      "sha256": "9a6e3a82124ddee066d98eb60f11619a5a939e4b49428a1dacb55f31ba8f9356"
+    },
+    {
+      "source": "migration/free-my-tv/web/icons/plex.svg",
+      "target": "web/icons/plex.svg",
+      "sha256": "262a5ead1c7672bba56628f73ecc31fe7b548a3233822f992875af916ee08418"
+    },
+    {
+      "source": "migration/free-my-tv/web/icons/prime.png",
+      "target": "web/icons/prime.png",
+      "sha256": "1acc7c72b096052a8b953d2c1dc7984bc407fb8c351ee49bee23ed61ec138631"
+    },
+    {
+      "source": "migration/free-my-tv/web/icons/redbull.svg",
+      "target": "web/icons/redbull.svg",
+      "sha256": "24022a6b8689a2ff4d3f66b6de027c122a382bbacd7c96fb87908855e417533c"
+    },
+    {
+      "source": "migration/free-my-tv/web/icons/spotify.svg",
+      "target": "web/icons/spotify.svg",
+      "sha256": "0bb22f45e12b91f73c993aef0f2e0499e3e1902f17e2fd2b197efaabff2c5c03"
+    },
+    {
+      "source": "migration/free-my-tv/web/icons/steam.svg",
+      "target": "web/icons/steam.svg",
+      "sha256": "eed5f7ca4141f886c31e7e20214ca1606d9cf43a9b418818e6205d26d8d6c5df"
+    },
+    {
+      "source": "migration/free-my-tv/web/icons/ted.svg",
+      "target": "web/icons/ted.svg",
+      "sha256": "2cd7bd3ab57505d55d5d47c44801e18660fa441720ed1254b5376e56f614d8da"
+    },
+    {
+      "source": "migration/free-my-tv/web/icons/twitch.svg",
+      "target": "web/icons/twitch.svg",
+      "sha256": "b6a31cc15e4ff63ffd577d6e526669c5b57da22f07020b00b9fbc0e3ba37815d"
+    },
+    {
+      "source": "migration/free-my-tv/web/icons/youtube.png",
+      "target": "web/icons/youtube.png",
+      "sha256": "d3eaf8e81c1a26a4c903509857d365545812a6d9eaf85fe230d78fa4eeb6f443"
+    },
+    {
+      "source": "migration/free-my-tv/web/icons/youtubekids.svg",
+      "target": "web/icons/youtubekids.svg",
+      "sha256": "4ead4f5f9dd94eb399d8eb7ea16c96be484db279330234a7f4291785fc55ce7a"
+    },
+    {
+      "source": "migration/free-my-tv/app/res/drawable/coin_btc.xml",
+      "target": "web/coins/coin_btc.xml",
+      "sha256": "8792458d9bde8b5142eb645b896a96386d5a7fde78fd86e4534ad14b0786fd7f"
+    },
+    {
+      "source": "migration/free-my-tv/app/res/drawable/coin_eth.xml",
+      "target": "web/coins/coin_eth.xml",
+      "sha256": "cc7b9e1a8d40681333ba5dca6989d9ef5480d7b21461aa832d27bd5f21a81fc2"
+    },
+    {
+      "source": "migration/free-my-tv/app/res/drawable/coin_sol.xml",
+      "target": "web/coins/coin_sol.xml",
+      "sha256": "4b38c14584839beccbb70dcaf238b34b53c6884919aefa042e50155fe7e6aa69"
+    },
+    {
+      "source": "migration/free-my-tv/app/res/drawable/coin_usdt.xml",
+      "target": "web/coins/coin_usdt.xml",
+      "sha256": "bb8f5db702a7657cfa29d32f1a7ed860336407b3c6ed95690d57703da24de2ba"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/fonts/InterVariable.ttf",
+      "target": "web/fonts/InterVariable.ttf",
+      "sha256": "4989b125924991b90d05b2d16e0e388c48f7d5bb8b30539bbf9c755278d0ccaf"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/fonts/OFL.txt",
+      "target": "web/fonts/OFL.txt",
+      "sha256": "b3195af0fb14368d1b3b10fb9d3fe503b7163ea083859d2ee553bc74da07c320"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/i18n/cs.json",
+      "target": "web/i18n/cs.json",
+      "sha256": "f582d8fbe964ea1414fa41fcfe72e133c78869e23fa84591c7d375718917516a"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/i18n/da.json",
+      "target": "web/i18n/da.json",
+      "sha256": "e7b3e6192be11541baa8612ba5becaaa16f7f5ad0e4771a4a52d94b09c5c10b3"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/i18n/de.json",
+      "target": "web/i18n/de.json",
+      "sha256": "656dd56a0f61231289a60f40b99e9ad0e48955413cd86b9cb0d0dbdc4e667d4b"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/i18n/el.json",
+      "target": "web/i18n/el.json",
+      "sha256": "87fcc5172c6f6f95850a9318938cea97340d823f459f31dbccaa3dcdf31073ab"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/i18n/en.json",
+      "target": "web/i18n/en.json",
+      "sha256": "6ac6cfeeead2e0482104b28240e09ed027707d51f3f4fea3f9304ab0d35b3e76"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/i18n/es.json",
+      "target": "web/i18n/es.json",
+      "sha256": "b6dbd61bd802ec8d07e4c97e167aa9e41948022f037606ddb28f975ae1a2649e"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/i18n/fi.json",
+      "target": "web/i18n/fi.json",
+      "sha256": "419b90d2bfefe5febad88168d7e22fb5940f774aad5aa71ad0e2b79a701a4881"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/i18n/fr.json",
+      "target": "web/i18n/fr.json",
+      "sha256": "77f4b433dd51002ddbd97a0815070511cb39ee0af6c3d4ccf2ecf9570d4acfd5"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/i18n/hi.json",
+      "target": "web/i18n/hi.json",
+      "sha256": "5095c29773072be433b4a20268f74cdc80563ad3b5072bef8dd1d31ee9d4106e"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/i18n/id.json",
+      "target": "web/i18n/id.json",
+      "sha256": "12f6d749457541bf70e00516d6d8742df9b1b064d19820bd272b81a148285d58"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/i18n/it.json",
+      "target": "web/i18n/it.json",
+      "sha256": "0ec11c7db5bfbc836f7f211cf04d9646aa1bd2e3dcc77682e04803954793926e"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/i18n/ja.json",
+      "target": "web/i18n/ja.json",
+      "sha256": "870f9fed26fc01c45694c41003b64b35055ed0c006045d7eb173fa4eb8f9b84c"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/i18n/ko.json",
+      "target": "web/i18n/ko.json",
+      "sha256": "0ab252a747bd2e6b566bacaa79935bf18ae5ba0b9f9d04b7869ea74c00e08996"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/i18n/nb.json",
+      "target": "web/i18n/nb.json",
+      "sha256": "0e7330f0f0374fbd0812030a3b859fa4778adee54060d90859163216fba1feae"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/i18n/nl.json",
+      "target": "web/i18n/nl.json",
+      "sha256": "2e68d2d5a15965de1934590753a5c1ca8030a15a989543f63bbdb0723d7bf08c"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/i18n/pl.json",
+      "target": "web/i18n/pl.json",
+      "sha256": "2a369add3d4ce07eec917a8de9f468b3b8c9c3b1edc6342746d5f013664be2a2"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/i18n/pt.json",
+      "target": "web/i18n/pt.json",
+      "sha256": "14f0a05dc2b3d59985e6c988f08e645f9ee68a154e083154ee4a10fb044ba808"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/i18n/ro.json",
+      "target": "web/i18n/ro.json",
+      "sha256": "3e48bd0b89736365cafe5811df9dda74a73ff765ca2aa3f1a1b7832250b98144"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/i18n/ru.json",
+      "target": "web/i18n/ru.json",
+      "sha256": "2696c0a1aa5c5d3b2bfed6ee748b365023bbe56d3fedeef630bfff7d7408a59b"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/i18n/sv.json",
+      "target": "web/i18n/sv.json",
+      "sha256": "3ce14d4e9a9836bc73cad0cccef0d60fbd2bea739963f63a63fd35736db46613"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/i18n/th.json",
+      "target": "web/i18n/th.json",
+      "sha256": "bd061cef70e848837a105c328d64e30a2af9e0801de0f8ea7d1ee12cd35b1b75"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/i18n/tr.json",
+      "target": "web/i18n/tr.json",
+      "sha256": "1cc5ac80d7ab559eff38a08af527333e47b679c2326539acfae3133e1b94330e"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/i18n/uk.json",
+      "target": "web/i18n/uk.json",
+      "sha256": "35d85684cd8cd87d0e6ea74f9efa1414099885e052b0cb7b6ae2ac01451ca0e0"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/i18n/vi.json",
+      "target": "web/i18n/vi.json",
+      "sha256": "be1c07c819ddb8d4b63be4a432029ab49b64b6d0f29ccbab0cc0d3ea8969ed45"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/i18n/zh-CN.json",
+      "target": "web/i18n/zh-CN.json",
+      "sha256": "724187fd3ed419277581943fae01dbbb35be5b623d79ab62d73cab518e8a8f9d"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/i18n/zh-TW.json",
+      "target": "web/i18n/zh-TW.json",
+      "sha256": "927dd05e035692a96ac4da21542f736bb60b6b52cd962f50deb27b093e511100"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/accessibility.png",
+      "target": "web/symbols/accessibility.png",
+      "sha256": "1c157ce8c0b08734d969fd84473ad4dbcffc08ff459940dc9189645d1644b147"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/apps.png",
+      "target": "web/symbols/apps.png",
+      "sha256": "5ff98ae1dd22c840024657e84f0b77d212f90acd1012247354a28911bd4caa47"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/bedtime.png",
+      "target": "web/symbols/bedtime.png",
+      "sha256": "e7406d7dd3913beb81eedc8902e32e1396cf666bc620f918e19311dbbc7bea4a"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/bell.png",
+      "target": "web/symbols/bell.png",
+      "sha256": "e3c596b514271768e913b2c076d4c22987843fd4bdc48c4e9d1d6f09f80f9a20"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/bitcoin.png",
+      "target": "web/symbols/bitcoin.png",
+      "sha256": "0a148a4e7638c9c4c8418ef93e0ff7572ed43192a0ebb1b0f914f7e6c6fe4074"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/blinds.png",
+      "target": "web/symbols/blinds.png",
+      "sha256": "b967659fa0c7178cf6626352c909b857559d0e4e81804c09c9f02fad11b5f224"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/bluetooth.png",
+      "target": "web/symbols/bluetooth.png",
+      "sha256": "ef1698c6041a1a51bfa09b7aadfc49579d01d1e7fdfa6ac6eb9dac4fbd6490dd"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/bolt.png",
+      "target": "web/symbols/bolt.png",
+      "sha256": "97e595cdfdfcb3b95e61abad7f362fc05b103fb7a46f47e746ab60efe112da80"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/cast.png",
+      "target": "web/symbols/cast.png",
+      "sha256": "069c8d70812d8d4ca3332268211da66f60ecf18932e182e3bfb861ccda696ee2"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/check.png",
+      "target": "web/symbols/check.png",
+      "sha256": "40525d8a2cdc7208f8114bf653b9920b33bb7d714fdc9120263e9a73f11da7f2"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/chevron_down.png",
+      "target": "web/symbols/chevron_down.png",
+      "sha256": "1f45f8e0252ee4aa27f8d0882838fed18772ac4f0774e009f4ba822c37ac2c30"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/chevron_right.png",
+      "target": "web/symbols/chevron_right.png",
+      "sha256": "0153777710b5f5d55e702a9dff0c20fd6547a7b340ed6e8f6091340f974811ae"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/clear_night.png",
+      "target": "web/symbols/clear_night.png",
+      "sha256": "e7406d7dd3913beb81eedc8902e32e1396cf666bc620f918e19311dbbc7bea4a"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/cloud.png",
+      "target": "web/symbols/cloud.png",
+      "sha256": "a0a72ff7b5de0585cb51b73c637d9bd95b785123c50478122a0205508258d262"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/ethernet.png",
+      "target": "web/symbols/ethernet.png",
+      "sha256": "84192ae1e5f482dd7332bf2dc3e0031cb2819cba235c79b9f7c5a978e9d2b465"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/fan.png",
+      "target": "web/symbols/fan.png",
+      "sha256": "feefdaba440e1639fef663e7d72352dc516455fb45ddf8359fa0fbc847701167"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/foggy.png",
+      "target": "web/symbols/foggy.png",
+      "sha256": "87c50a14fd3cb3104ec354a467d820c8b9a4f95af9d7f86473c0a8bed1dcccbf"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/gamepad.png",
+      "target": "web/symbols/gamepad.png",
+      "sha256": "a6930459b10c2c2039cbf4d4ed073ce2d029ec7364b6b5748b3817ca55cbe45b"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/hdmi.png",
+      "target": "web/symbols/hdmi.png",
+      "sha256": "96650289223b2f0ca45fe262e394cbebdefda0a539f7f7a92e20858e6acf0158"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/home.png",
+      "target": "web/symbols/home.png",
+      "sha256": "e78fd254c9a15bb40e39020b398613dbc9fe8d297955103cc153e8fd2084f059"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/keystone.png",
+      "target": "web/symbols/keystone.png",
+      "sha256": "6f0ca0bb06f44cb2fc8d3a24c482a57436404c87002dd10a2f0ecadee8edbc34"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/LICENSE-material-symbols.txt",
+      "target": "web/symbols/LICENSE-material-symbols.txt",
+      "sha256": "49bbe9114e49214df2ccc324cb3ac8d1d1aa1c3a0947f94c286765e86647b32e"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/lightbulb.png",
+      "target": "web/symbols/lightbulb.png",
+      "sha256": "6a7ae9cf99d7d388840baf5e7ee0a37b88fcddb9a6be4de3fe91dc66e3b5a954"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/live_tv.png",
+      "target": "web/symbols/live_tv.png",
+      "sha256": "d4ee400a56075b6e8d09d763b2a3b291cc592b9f3b2667ad84fa9cb76436a010"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/partly_cloudy_day.png",
+      "target": "web/symbols/partly_cloudy_day.png",
+      "sha256": "16ae95a340cf6c105c1932643f9239049c1d711dd9df7a78f8f5579f7d559711"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/partly_cloudy_night.png",
+      "target": "web/symbols/partly_cloudy_night.png",
+      "sha256": "569de663e78e5c03134f5a81f0e083e0de1e4106c832ba57af45897e31d28e5c"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/play.png",
+      "target": "web/symbols/play.png",
+      "sha256": "e52c506936571a5814ee7a423bae980dd5b8b8bc2ea8b613a2d9686e7bbc4786"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/rainy.png",
+      "target": "web/symbols/rainy.png",
+      "sha256": "51f484ea33cc7d6cf7407854bca2e08fc729d61b64d784e61d62ee954bc29745"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/recents.png",
+      "target": "web/symbols/recents.png",
+      "sha256": "5857aa9d18a65cdc0548f7293fdc367a3c2db047803c8376f083d4307a0af75e"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/settings.png",
+      "target": "web/symbols/settings.png",
+      "sha256": "1f2105efab9a1df64fd0d4a14049ef842b694bececac94c34c5e1a23d7b87d1a"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/smart_button.png",
+      "target": "web/symbols/smart_button.png",
+      "sha256": "0fca695effa50b0b7c2e78c46ce84b75970ba3772dee1fd138be46a9f8a0c629"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/snowflake.png",
+      "target": "web/symbols/snowflake.png",
+      "sha256": "8491460074a016f3708b88057f0acf5e14778a1e84f924fb8fa2332a7f3d1ffc"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/sparkles.png",
+      "target": "web/symbols/sparkles.png",
+      "sha256": "8790b4c238e5f4cb416a4eb2a41e7a689fcf771dfbb3dc11f05b0a424ff116f8"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/speaker.png",
+      "target": "web/symbols/speaker.png",
+      "sha256": "a5a0aed663578faa02f2aae6b0b5aae5febf6b69d261028084ae4db36e3f335f"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/store.png",
+      "target": "web/symbols/store.png",
+      "sha256": "b8a6ffc29771dbaf30f3d2aa7981cd0807964311839e395af7ff60980cf4ca3d"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/sunny.png",
+      "target": "web/symbols/sunny.png",
+      "sha256": "afd0ef854f766b270cf3b03f9045a405db8b2e77d2025c5916b155df6d994e31"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/sunrise.png",
+      "target": "web/symbols/sunrise.png",
+      "sha256": "d60a9cc7081fe515c3b66381206e0161770efcd8695b545891dbc778dd186b91"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/sunset.png",
+      "target": "web/symbols/sunset.png",
+      "sha256": "d60a9cc7081fe515c3b66381206e0161770efcd8695b545891dbc778dd186b91"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/sync.png",
+      "target": "web/symbols/sync.png",
+      "sha256": "5913a9e18525d9f01790a0c32c285fcdaa86df9f59d7e3b81e306155182522bb"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/thunderstorm.png",
+      "target": "web/symbols/thunderstorm.png",
+      "sha256": "7d5fee3eaaeb0e81c13578c2cdee49421d530a7e1d846b1562a2b2de69207462"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/toggle.png",
+      "target": "web/symbols/toggle.png",
+      "sha256": "c9fa97101afb7577975df185464e65eeaaa03f17cd990c901815fee965067c3a"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/tv.png",
+      "target": "web/symbols/tv.png",
+      "sha256": "2146affdf2ed1a526fa6a8d9880591c4c5095eb20cf9d0b0e6f5f074554e35d1"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/tv_settings.png",
+      "target": "web/symbols/tv_settings.png",
+      "sha256": "8a24a6b709d3fe94c5277692373eab20177d71d6a448e2b267694dd10aa1a406"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/usb.png",
+      "target": "web/symbols/usb.png",
+      "sha256": "03b707406a5036cbd6c4933827fab9d897a0ae9a4f4700e9f16fd9f740ce5cd7"
+    },
+    {
+      "source": "migration/free-my-tv/app/assets/symbols/wifi.png",
+      "target": "web/symbols/wifi.png",
+      "sha256": "9f19a97d85067d36dc285d0584510c954fe097183dd757e78a5fcb24716d1823"
+    }
+  ]
+}

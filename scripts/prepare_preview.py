@@ -3,17 +3,22 @@ from pathlib import Path
 import sys
 
 sys.dont_write_bytecode = True
-ROOT = Path(__file__).resolve().parent
-sys.path.insert(0, str(ROOT / "tools"))
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "scripts"))
 import webapp
 
 
 def main():
     # Reuse upstream generation with its generic defaults, without reading config.properties.
     files = webapp.files(dict(webapp.GENERIC), "prepare_preview.py")
-    for name in ("LICENSE", "UPSTREAM_README.md"):
-        files[name] = (ROOT / name).read_bytes()
-    output = ROOT / "preview"
+    for name, source in (("LICENSE", "LICENSE"),
+                         ("UPSTREAM_README.md", "docs/UPSTREAM_README.md"),
+                         ("THIRD_PARTY_NOTICES.md", "THIRD_PARTY_NOTICES.md")):
+        files[name] = (ROOT / source).read_bytes()
+    # Output places the preserved README beside the notices, not inside docs/.
+    files["THIRD_PARTY_NOTICES.md"] = files["THIRD_PARTY_NOTICES.md"].replace(
+        b"](docs/UPSTREAM_README.md)", b"](UPSTREAM_README.md)")
+    output = ROOT / "dist" / "preview"
     # No recursive cleanup: regenerate the known files in this isolated directory only.
     for name, content in files.items():
         target = output / name

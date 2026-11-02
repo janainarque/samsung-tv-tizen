@@ -36,8 +36,8 @@ import urllib.request
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "app", "src")
 WEB = os.path.join(ROOT, "web")
-I18N = os.path.join(ROOT, "app", "assets", "i18n")
-CACHE = os.path.join(ROOT, "tools", ".i18n-cache.json")   # translations made with --fill, by hash (not committed)
+I18N = os.path.join(ROOT, "web", "i18n")
+CACHE = os.path.join(ROOT, "scripts", ".i18n-cache.json")   # translations made with --fill, by hash (not committed)
 DEFAULT_MODEL = "claude-haiku-5-5"
 HAND = {"pt", "es", "de", "ru", "th", "tr"}   # hand translations: --fill leaves them to a person unless --lang names one
 CALL = re.compile(r"\bUi\.(trf?|plural|datePattern)\(")
@@ -133,7 +133,8 @@ def web_calls():
         if not name.endswith(".js") or name == "strings.js":   # strings.js is where the calls are made, not used
             continue
         path = os.path.join(WEB, name)
-        text = open(path, encoding="utf-8").read()
+        with open(path, encoding="utf-8") as source:
+            text = source.read()
         for m in WEB_CALL.finditer(text):
             line = text.count("\n", 0, m.start()) + 1
             prefix = text[text.rfind("\n", 0, m.start()) + 1:m.start()].lstrip()

@@ -13,10 +13,10 @@ Test/
 .buildResult/
 
 # Free My TV - arquivos gerados
-/migration/free-my-tv/preview/
-/migration/free-my-tv/tizen-app/
-/migration/free-my-tv/config.properties
-/migration/free-my-tv/tools/.i18n-cache.json
+/dist/
+/backups/
+/config.properties
+/scripts/.i18n-cache.json
 
 # Credenciais e chaves privadas
 .env
