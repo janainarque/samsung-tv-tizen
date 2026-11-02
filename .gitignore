@@ -11,3 +11,19 @@ Build/
 Test/
 .tizen-rds/
 .buildResult/
+
+# Free My TV - arquivos gerados
+/migration/free-my-tv/preview/
+/migration/free-my-tv/tizen-app/
+/migration/free-my-tv/config.properties
+/migration/free-my-tv/tools/.i18n-cache.json
+
+# Credenciais e chaves privadas
+.env
+.env.*
+!.env.example
+.sign/
+*.key
+*.pem
+*.jks
+*.keystore
