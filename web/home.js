@@ -385,6 +385,10 @@
   // MARK: - Top: title, tabs, buttons, quotes
 
   var TAB_KIND = [null, 'movie', 'tv'];
+  var TOP_ACTIONS = [
+    ['live_tv', 'light|Live TV'], ['hdmi', 'HDMI Inputs'],
+    ['settings', 'light|Settings'], ['logout', 'Samsung Original']
+  ];
 
   function renderTop() {
     $('title').textContent = tr('For You');
@@ -397,12 +401,12 @@
     }
     var buttons = $('buttons');
     buttons.innerHTML = '';
-    var defs = [['live_tv', tr('light|Live TV')], ['hdmi', tr('HDMI Inputs')], ['settings', tr('light|Settings')]];
-    for (var b = 0; b < 3; b++) {
-      var r = el('button', 'round' + (b === 2 ? ' last' : ''), buttons);
-      r.style.left = (1596 + 88 * b) + 'px';
+    var defs = TOP_ACTIONS;
+    for (var b = 0; b < defs.length; b++) {
+      var r = el('button', 'round' + (b === defs.length - 1 ? ' last' : ''), buttons);
+      r.style.left = (1772 - 88 * (defs.length - 1 - b)) + 'px';
       sym(defs[b][0], r);
-      el('div', 'tip', r, defs[b][1]);
+      el('div', 'tip', r, tr(defs[b][1]));
       hover(r, Z.TOP, 3 + b);
     }
   }
@@ -1285,9 +1289,12 @@
     switch (st.zone) {
       case Z.TOP:
         if (st.top < 3) return;
-        if (st.top === 3) { var live = liveTV(); if (live) launcher(live.id, tr('Live TV'))(); }
-        else if (st.top === 4) { st.zone = Z.SHELF; openDrawer(); st.drawer = 1 < drawerInputs ? 1 : 0; updateFocus(); }
-        else openSettings();
+        var action = TOP_ACTIONS[st.top - 3];
+        if (!action) return;
+        if (action[0] === 'live_tv') { var live = liveTV(); if (live) launcher(live.id, tr('Live TV'))(); }
+        else if (action[0] === 'hdmi') { st.zone = Z.SHELF; openDrawer(); st.drawer = 1 < drawerInputs ? 1 : 0; updateFocus(); }
+        else if (action[0] === 'settings') openSettings();
+        else if (action[0] === 'logout' && !TV.exitApplication()) toast(tr("Couldn't exit application."));
         return;
       case Z.CARDS:
         var target = pickTarget(cards[st.card]);
@@ -1354,7 +1361,7 @@
         break;
       case Z.TOP:
         if (dx) {
-          st.top = Math.max(Data.hasKey() ? 0 : 3, Math.min(5, st.top + dx));   // without the picks the tabs can't hold focus
+          st.top = Math.max(Data.hasKey() ? 0 : 3, Math.min(3 + TOP_ACTIONS.length - 1, st.top + dx));   // without the picks the tabs can't hold focus
           if (st.top < 3) selectTab(st.top);   // as on Apple TV: focusing a tab selects it
         } else if (dy > 0) {
           if (cards.length) { st.zone = Z.CARDS; st.card = Math.min(cards.length - 1, st.top < 3 ? 0 : cards.length - 1); }

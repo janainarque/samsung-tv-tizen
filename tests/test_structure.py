@@ -3,8 +3,12 @@ from html.parser import HTMLParser
 import json
 from pathlib import Path
 import re
+import os
+import runpy
 import sys
+import tempfile
 import unittest
+from unittest.mock import patch
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,11 +30,34 @@ class Resources(HTMLParser):
 
 
 class StructureTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Exercise the real generators in a disposable output tree, never dist/.
+        cls.temporary = tempfile.TemporaryDirectory()
+        cls.addClassCleanup(cls.temporary.cleanup)
+        cls.output = Path(cls.temporary.name)
+        write_bytes = Path.write_bytes
+        write_text = Path.write_text
+
+        def destination(path):
+            target = cls.output / path.relative_to(ROOT / "dist")
+            os.makedirs(target.parent, exist_ok=True)
+            return target
+
+        for script in ("prepare_preview.py", "prepare_tizen.py"):
+            module = runpy.run_path(str(ROOT / "scripts" / script))
+            with patch.object(Path, "mkdir"), patch.object(
+                Path, "write_bytes", lambda path, data: write_bytes(destination(path), data)
+            ), patch.object(
+                Path, "write_text", lambda path, data, **kw: write_text(destination(path), data, **kw)
+            ):
+                module["main"]()
+
     def test_current_sources_reach_both_outputs(self):
         expected = webapp.files(dict(webapp.GENERIC), "validation")
         generated = {"config.js", "coins.js", "i18n.js"}
         for output in ("preview", "tizen"):
-            folder = ROOT / "dist" / output
+            folder = self.output / output
             for name, data in expected.items():
                 with self.subTest(output=output, resource=name):
                     path = folder / name
@@ -46,7 +73,7 @@ class StructureTests(unittest.TestCase):
 
     def test_html_and_css_local_resources(self):
         for name in ("preview", "tizen"):
-            folder = ROOT / "dist" / name
+            folder = self.output / name
             parser = Resources()
             parser.feed((folder / "index.html").read_text(encoding="utf-8"))
             for resource in parser.paths:
@@ -58,7 +85,7 @@ class StructureTests(unittest.TestCase):
 
     def test_manifest_identity_and_copy(self):
         manifest = ROOT / "tizen/config.xml"
-        self.assertEqual(manifest.read_bytes(), (ROOT / "dist/tizen/config.xml").read_bytes())
+        self.assertEqual(manifest.read_bytes(), (self.output / "tizen/config.xml").read_bytes())
         app = ET.parse(manifest).getroot().find("{http://tizen.org/ns/widgets}application")
         self.assertEqual(app.attrib["id"], "FmtvDU8a01.FreeMyTVVariant")
         self.assertEqual(app.attrib["package"], "FmtvDU8a01")
@@ -70,9 +97,9 @@ class StructureTests(unittest.TestCase):
                    "symbols/LICENSE-material-symbols.txt": "web/symbols/LICENSE-material-symbols.txt"}
         for output in ("preview", "tizen"):
             for destination, source in notices.items():
-                self.assertEqual((ROOT / "dist" / output / destination).read_bytes(),
+                self.assertEqual((self.output / output / destination).read_bytes(),
                                  (ROOT / source).read_bytes())
-            folder = ROOT / "dist" / output
+            folder = self.output / output
             notice = (folder / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
             source_notice = (ROOT / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
             self.assertEqual(notice, source_notice.replace(
@@ -82,7 +109,7 @@ class StructureTests(unittest.TestCase):
             self.assertTrue((folder / "UPSTREAM_README.md").is_file())
 
     def test_sdk_allowlist_exact_and_safe(self):
-        folder = ROOT / "dist/tizen"
+        folder = self.output / "tizen"
         settings = (folder / "tizen_web_project.yaml").read_text(encoding="utf-8")
         listed = [json.loads(line[4:]) for line in settings.split("files:\n", 1)[1]
                   .split("excludes:", 1)[0].splitlines() if line.startswith("  - ")]

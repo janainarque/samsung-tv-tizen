@@ -608,6 +608,15 @@ var TV = (function () {
     /** LG: keeps the TV's screensaver away while ours will take over (`hold` says when). */
     holdScreenSaver: holdScreenSaver,
 
+    /** Explicit Samsung exit; unsupported browsers and API failures return false. */
+    exitApplication: function () {
+      if (!samsung) return false;
+      try {
+        window.tizen.application.getCurrentApplication().exit();
+        return true;
+      } catch (e) { return false; }
+    },
+
     /** Back on the first screen: back to wherever the person came from. */
     back: function () {
       if (samsung) {
