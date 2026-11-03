@@ -165,6 +165,7 @@ var TV = (function () {
   // for the tiles, with a width and height so old WebKit sizes them like PNGs.
   var SAMSUNG_ICONS = {
     '9Ur5IzDKqV.TizenYouTube': 'icons/youtube.png',
+    'OGLLvqej7u.CrunchyrollWebApp': 'icons/crunchyroll.svg',
     'evKhCgZelL.AmazonIgnitionLauncher2': 'icons/prime.png',
     'org.tizen.primevideo': 'icons/prime.png',
     'RN1MCdNq8t.Netflix': 'icons/netflix.svg',
@@ -194,11 +195,21 @@ var TV = (function () {
 
   // Names Smart Hub gets wrong: HBO's app has none (so it never reached the shelf), others are long or old.
   var SAMSUNG_TITLES = {
+    '9Ur5IzDKqV.TizenYouTube': 'YouTube',
+    'OGLLvqej7u.CrunchyrollWebApp': 'Crunchyroll',
+    'LnLzvqrcEY.globo': 'Globoplay',
+    'org.tizen.primevideo': 'Prime Video',
+    'AQKO41xyKP.AmazonAlexa': 'Amazon Alexa',
+    'org.tizen.browser': 'Browser',
     'NvZ26VG9Yw.HBOGOLAG': 'Max',
     'rJeHak5zRg.Spotify': 'Spotify',
     'evKhCgZelL.AmazonIgnitionLauncher2': 'Prime Video',
     'org.tizen.globoplayapp': 'Globoplay'
   };
+
+  // No bundled brand logos for these IDs: use the existing wordmark fallback,
+  // rather than a successfully loaded but generic Tizen icon. Never infer new IDs.
+  var SAMSUNG_TEXT_ICONS = {'LnLzvqrcEY.globo': true, 'AQKO41xyKP.AmazonAlexa': true, 'org.tizen.browser': true};
 
   // Samsung's settings menu on Tizen 3, which answers no "settings" app control.
   var SAMSUNG_MENU = 'org.tizen.menu';
@@ -210,7 +221,8 @@ var TV = (function () {
     ['netflix', 'Netflix', '#E50914'], ['youtube.leanback.v4', 'YouTube', '#FF0033'], ['amazon', 'Prime Video', '#1A98FF'],
     ['com.disney.disneyplus-prod', 'Disney+', '#1838C8'], ['com.hbo.hbomax', 'Max', '#6C3BE0'],
     ['com.apple.appletv', 'Apple TV', '#B8BCC6'], ['globoplaywebos', 'Globoplay', '#FF5A1F'], ['spotify-beehive', 'Spotify', '#1DB954'],
-    ['cdp-30', 'Plex', '#E5A00D'], ['com.crunchyroll.webapp', 'Crunchyroll', '#F47521'], ['com.webos.app.browser', 'Web Browser', '#3A7BD5'],
+    ['cdp-30', 'Plex', '#E5A00D'], ['com.crunchyroll.webapp', 'Crunchyroll', '#F47521'], ['com.webos.app.browser', 'Browser', '#3A7BD5'],
+    ['preview:amazon-alexa', 'Amazon Alexa', '#1A98FF'],
     ['com.palm.app.settings', 'Settings', '#8E8E93']
   ];
 
@@ -283,16 +295,18 @@ var TV = (function () {
 
   function samsungApp(a) {
     var icon = a.iconPath || '';
-    if (icon && icon.indexOf('://') < 0) icon = 'file://' + icon;
+    // Only local filesystem paths/file URLs are accepted from the installed app list.
+    if (icon && icon.charAt(0) === '/') icon = 'file://' + icon;
+    if (icon && !/^file:\/\/\//i.test(icon)) icon = '';
     var title = SAMSUNG_TITLES[a.id] || a.name || a.id;
     // Older Smart Hubs (a 2015 JU6075) still list Amazon's app under its old name, with another id.
     if (/^Amazon( Instant)? Video$/i.test(title)) title = 'Prime Video';
     var key = String(title).toLowerCase().replace(/[^a-z0-9]/g, '');
     var byName = Object.prototype.hasOwnProperty.call(SAMSUNG_ICON_NAMES, key) ? SAMSUNG_ICON_NAMES[key] : '';
-    if (SAMSUNG_ICONS[a.id] || byName) icon = SAMSUNG_ICONS[a.id] || byName;
+    var fallbackIcon = SAMSUNG_ICONS[a.id] || byName;
     var dial = key === 'netflix' ? 'Netflix' : key === 'youtube' ? 'YouTube' : /^(amazon)?primevideo$/.test(key) ? 'Amazon' : '';
     if (dial) samsungDial[a.id] = dial;
-    return {id: a.id, title: title, icon: icon, color: ''};
+    return {id: a.id, title: title, icon: SAMSUNG_TEXT_ICONS[a.id] ? '' : fallbackIcon || icon, fallbackIcon: fallbackIcon, color: ''};
   }
 
   /**
@@ -514,7 +528,10 @@ var TV = (function () {
     apps: function (done) {
       if (samsung) { samsungApps(done); return; }
       if (!webos) {
-        done(SAMPLE.map(function (s) { return {id: s[0], title: s[1], icon: '', color: s[2]}; }));
+        done(SAMPLE.map(function (s) {
+          var key = s[1].toLowerCase().replace(/[^a-z0-9]/g, '');
+          return {id: s[0], title: s[1], icon: SAMSUNG_ICON_NAMES[key] || '', color: s[2], demo: true};
+        }));
         return;
       }
       function list(res) {

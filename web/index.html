@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=1920, height=1080">
 <title>Free My TV</title>
-<link rel="stylesheet" href="home.css">
+<link rel="stylesheet" href="home.css?v=highlights-1">
 </head>
 <body>
 <script>
@@ -33,6 +33,16 @@
       <div id="buttons"></div>
       <div id="cards"></div>
       <div id="clock"><span class="time"></span><span class="date"></span></div>
+      <div id="highlight-tabs" role="tablist" aria-label="Destaques"><button type="button" role="tab" aria-selected="true">Animes</button><button type="button" role="tab" aria-selected="false" disabled>Filmes</button><button type="button" role="tab" aria-selected="false" disabled>Séries</button></div>
+      <section id="season-anime" aria-label="Anime da temporada" hidden>
+        <img class="anime-art" alt="" hidden>
+        <div class="anime-copy">
+          <p class="anime-label">ANIME DA TEMPORADA</p>
+          <h2>Animes da temporada</h2>
+          <p class="anime-info">Destaque indisponível.</p>
+        </div>
+        <div class="anime-dots" aria-hidden="true"></div>
+      </section>
     </div>
     <div id="platter"></div>
     <div id="tiles"></div>
@@ -57,6 +67,7 @@
 <script src="tv.js"></script>
 <script src="zones.js"></script>
 <script src="data.js"></script>
-<script src="home.js"></script>
+<script src="anime.js?v=6"></script>
+<script src="home.js?v=highlights-2"></script>
 </body>
 </html>

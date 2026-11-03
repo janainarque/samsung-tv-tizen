@@ -40,7 +40,11 @@ class TopActionsTests(unittest.TestCase):
         setup = r"""
 function check(ok, message) { if (!ok) throw new Error(message); }
 var $ = function(id) { return document.getElementById(id); };
-var Z = {TOP: 'top', SHELF: 'shelf', CARDS: 'cards'};
+var Z = {TOP: 'top', SHELF: 'shelf', CARDS: 'cards', ANIME: 'anime', HIGHLIGHT: 'highlight', WATCH: 'watch', DRAWER: 'drawer'};
+var highlightCategory = 0, highlightTab = 0, selectedCategory = '', animeOn = false, step = 0, SeasonAnime = {step: function(dx) { step += dx; }, select: function(kind) { selectedCategory = kind; }};
+function animeVisible() { return animeOn; }
+function shelfSize() { return shelf.length + 1; }
+var watchCursor = 0, ContinueWatching = {list: function() { return [{}, {}]; }};
 var st = {zone: Z.TOP, top: 3, tab: 0};
 var keyed = false, Data = {hasKey: function() { return keyed; }};
 var shelf = [{}], cards = [], drawerInputs = 2, recorded = '', message = '';
@@ -52,6 +56,7 @@ function el(tag, cls, parent, text) {
 function sym(name, parent) { el('span', 'sym', parent).dataset.symbol = name; }
 function hover(node, zone, index) { node.dataset.index = index; }
 function updateFocus() {}
+var attentionPending = 0, idleAt = 0; function scheduleAmbient() {}
 function selectTab(index) { st.tab = index; }
 function openSettings() { recorded = 'settings'; }
 function openDrawer() { recorded = 'hdmi'; }
@@ -78,10 +83,27 @@ st.top = 3; move(-1, 0); check(st.top === 3, 'Hidden tabs skipped');
 keyed = true; move(-1, 0); check(st.top === 2, 'Visible tabs reachable');
 st.top = 6; move(0, 1); check(st.zone === Z.SHELF, 'Down returns to shelf');
 move(0, -1); check(st.zone === Z.TOP, 'Up returns to actions');
-st.top = 3; activate(); check(recorded === 'existing-live-id', 'Live TV unchanged');
+animeOn = true; st.zone = Z.SHELF; move(0, -1); check(st.zone === Z.ANIME, 'Shelf enters anime');
+move(1, 0); move(-1, 0); check(step === 0 && st.zone === Z.ANIME, 'Anime arrows stay in zone');
+move(0, -1); check(st.zone === Z.HIGHLIGHT, 'Anime up enters category tabs');
+keyed = false; move(1, 0); check(highlightTab === 0, 'Missing key skips disabled Movies');
+keyed = true; move(1, 0); check(highlightTab === 1, 'Movies reachable with key');
+activate(); check(selectedCategory === 'movies', 'OK confirms category');
+move(1, 0); activate(); check(selectedCategory === 'series' && highlightTab === 2, 'Third tab confirms series');
+move(1, 0); check(highlightTab === 2, 'Third tab right boundary');
+move(-1, 0); activate(); check(selectedCategory === 'movies', 'Return from series to movies');
+move(0, -1); check(st.zone === Z.TOP, 'Tabs up enters actions');
+move(0, 1); check(st.zone === Z.HIGHLIGHT, 'Actions down enters tabs');
+move(0, 1); check(st.zone === Z.ANIME, 'Tabs down enters anime');
+move(0, 1); check(st.zone === Z.SHELF, 'Anime down returns to shelf');
+st.zone = Z.TOP; st.top = 3; activate(); check(recorded === 'existing-live-id', 'Live TV unchanged');
 st.top = 4; activate(); check(recorded === 'hdmi', 'HDMI unchanged');
 st.zone = Z.TOP; st.top = 5; activate(); check(recorded === 'settings', 'Settings unchanged');
 st.top = 6; activate(); check(message.length > 0, 'Browser fallback');
+st.zone = Z.DRAWER; move(0, 1); check(st.zone === Z.WATCH, 'Drawer down enters watch list');
+move(1, 0); check(watchCursor === 1, 'Edit action reachable');
+move(0, 1); check(watchCursor === 3, 'Next entry edit action');
+move(0, -1); move(0, -1); check(st.zone === Z.DRAWER, 'Watch list up returns shortcuts');
 """
         adapter_checks = r"""
 check(TV.exitApplication() === false, 'No Tizen API is safe');

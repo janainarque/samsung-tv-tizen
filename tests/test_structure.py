@@ -10,6 +10,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import xml.etree.ElementTree as ET
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -77,7 +78,7 @@ class StructureTests(unittest.TestCase):
             parser = Resources()
             parser.feed((folder / "index.html").read_text(encoding="utf-8"))
             for resource in parser.paths:
-                self.assertTrue((folder / resource).is_file(), resource)
+                self.assertTrue((folder / urlsplit(resource).path).is_file(), resource)
             css = (folder / "home.css").read_text(encoding="utf-8")
             for resource in re.findall(r"url\(['\"]?([^)'\"]+)", css):
                 if not resource.startswith(("data:", "http:", "https:")):

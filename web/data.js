@@ -4,7 +4,7 @@
  *    the person's own free key from config.properties), 3 per hour (up to 6 in Home Settings);
  *  - weather, sunrise and sunset (Open-Meteo, every 30 min) and optional crypto prices (Binance, every 5 min).
  * Settings changed on the TV (Prefs) win over config.properties, as on Android. Built without a city (--generic), the
- * TV's time zone gives the city, and its country the currency and the region (zones.js).
+ * weather defaults to Brasília; the time zone still supplies currency/region hints (zones.js).
  */
 var CONFIG = window.CONFIG || {};
 
@@ -46,9 +46,10 @@ var Place = (function () {
   var tz = zone(TV.zone()), set = CONFIG.latitude !== '' && CONFIG.latitude !== undefined;
   var country = (CONFIG.tmdbRegion || (tz ? tz.country : '') || 'US').toUpperCase();
   return {
-    lat: set ? CONFIG.latitude : tz ? tz.lat : '40.7128',
-    lon: set ? CONFIG.longitude : tz ? tz.lon : '-74.0060',
-    city: CONFIG.city || (!set && tz ? tz.name : ''),
+    // City coordinates, not GPS. Brasília uses America/Sao_Paulo, but is not São Paulo.
+    lat: set ? CONFIG.latitude : '-15.7939',
+    lon: set ? CONFIG.longitude : '-47.8828',
+    city: CONFIG.city || (!set ? 'Brasília' : ''),
     country: country,
     currency: (CONFIG.currency || (country === 'BR' ? 'BRL' : EURO.test(country) ? 'EUR' : 'USD')).toUpperCase(),
     /** Fahrenheit for TVs in the US (by their time zone, or their language when it doesn't tell). */
@@ -65,6 +66,9 @@ var Prefs = (function () {
   function pick(name, fallback) { return v[name] === undefined ? fallback : v[name]; }
   return {
     version: 0,
+    ambientEnabled: function () { return pick('ambientEnabled', true) !== false; },
+    ambientMinutes: function () { var n = Number(pick('ambientMinutes', 5)); return [1, 5, 10, 15].indexOf(n) >= 0 ? n : 5; },
+    continueWatching: function () { return pick('continueWatching', []); },
     language: function () { return pick('language', CONFIG.language || 'auto'); },
     temperature: function () { return pick('temperature', CONFIG.temperature || 'auto'); },
     theme: function () { return pick('theme', CONFIG.theme || 'auto'); },
@@ -86,7 +90,7 @@ var Prefs = (function () {
     shelf: function () { return pick('shelf', null); },
     /** The shelf_apps of the build that last set the shelf, so a new one wins once over the TV's choice. */
     shelfConfig: function () { return pick('shelfConfig', ''); },
-    /** The weather's city, picked on the TV (Home Settings → City), or config.properties' (or the time zone's). */
+    /** Saved city wins over config.properties and the Brasília weather default. */
     city: function () { return pick('city', Place.city); },
     latitude: function () { return pick('latitude', Place.lat); },
     longitude: function () { return pick('longitude', Place.lon); },
@@ -111,6 +115,38 @@ var Prefs = (function () {
     }
   };
 })();
+
+// Manual bookmarks only. This is not a streaming watch-history integration.
+var ContinueWatching = (function () {
+  function clean(item) {
+    if (!item || typeof item.title !== 'string' || !item.title.trim()
+        || ['anime', 'movies', 'series'].indexOf(item.category) < 0) return null;
+    function number(value) { return Math.max(1, Math.min(999, Math.floor(Number(value) || 1))); }
+    return {title: item.title.trim().slice(0, 180), category: item.category,
+      image: typeof item.image === 'string' && /^https:\/\/(s\d*\.anilist\.co|image\.tmdb\.org)\//.test(item.image) ? item.image : '',
+      season: item.category === 'movies' ? null : number(item.season),
+      episode: item.category === 'movies' ? null : number(item.episode),
+      appId: typeof item.appId === 'string' ? item.appId : ''};
+  }
+  function list() {
+    var value = Prefs.continueWatching();
+    return (Array.isArray(value) ? value : []).map(clean).filter(Boolean).slice(0, 3);
+  }
+  return {list: list, clean: clean,
+    save: function (item, index) {
+      item = clean(item);
+      if (!item) return false;
+      var items = list();
+      if (index >= 0 && index < items.length) items[index] = item;
+      else { if (items.length >= 3) return false; items.push(item); }
+      Prefs.set('continueWatching', items); return true;
+    },
+    remove: function (index) {
+      var items = list();
+      if (index < 0 || index >= items.length) return;
+      items.splice(index, 1); Prefs.set('continueWatching', items);
+    }};
+}());
 
 var Data = (function () {
   'use strict';
@@ -390,6 +426,85 @@ var Data = (function () {
     }, key);
   }
 
+  // Independent editorial highlights: no provider discovery or per-film details.
+  function highlights(kind) {
+    var cacheKey = kind === 'movie' ? 'movieHighlights' : 'tvHighlights';
+    var genreKey = kind === 'movie' ? 'movieGenres' : 'tvGenres';
+    var saved = stored(cacheKey) || {}, busy = false, retryAt = 0, revision = 0;
+    var entries = [], errorMessage = '';
+    function text(value) { return typeof value === 'string' ? value.trim() : ''; }
+    function title(value) {
+      return text(kind === 'movie' ? value.title : value.name)
+        || text(kind === 'movie' ? value.original_title : value.original_name);
+    }
+    function validItems(items) {
+      return (Array.isArray(items) ? items : []).filter(function (p) {
+        return p && typeof p.title === 'string' && Array.isArray(p.genres)
+          && typeof p.image === 'string' && /^https:\/\/image\.tmdb\.org\/t\/p\//.test(p.image);
+      }).slice(0, 5).map(function (p) {
+        // Cached claims are not evidence of a platform's audio/subtitle tracks.
+        return {id: p.id, source: 'tmdb', kind: kind, title: p.title, image: p.image,
+          genres: p.genres.filter(function (g) { return !!text(g); }), year: p.year,
+          score: typeof p.score === 'number' ? p.score : null,
+          overview: text(p.overview), languageAvailability: []};
+      });
+    }
+    function refresh() {
+      if (!KEY) { entries = []; errorMessage = ''; return; }
+      var now = Date.now();
+      if (!entries.length && saved.language === 'pt-BR' && now >= saved.at && now - saved.at < 7 * 86400000)
+        entries = validItems(saved.items);
+      if (busy || now < retryAt || (entries.length && now >= saved.at && now - saved.at < 6 * 3600000)) return;
+      busy = true;
+      var generation = revision;
+      function finish(err, items) {
+        if (generation !== revision) return;
+        busy = false;
+        errorMessage = err ? (kind === 'movie' ? 'Filmes indisponíveis no momento.' : 'Séries indisponíveis no momento.') : '';
+        if (err) retryAt = Date.now() + 10 * 60000;
+        else {
+          entries = items;
+          saved = {at: Date.now(), language: 'pt-BR', items: items};
+          store(cacheKey, saved);
+        }
+        changed();
+      }
+      tmdb('/' + kind + '/popular?language=pt-BR&page=1', function (err, result) {
+        if (generation !== revision) return;
+        if (err || !result || !Array.isArray(result.results)) { finish(err || new Error('Invalid list')); return; }
+        var candidates = result.results.filter(function (p) { return p && !p.adult && title(p) && (p.backdrop_path || p.poster_path); }).slice(0, 5);
+        if (!candidates.length) { finish(new Error('Empty list')); return; }
+        function complete(genres) {
+          var map = {};
+            genres.forEach(function (g) { if (g && text(g.name)) map[g.id] = text(g.name); });
+          finish(null, candidates.map(function (p) {
+            var path = p.backdrop_path || p.poster_path;
+            return {id: p.id, source: 'tmdb', kind: kind, title: title(p).slice(0, 180),
+              overview: text(p.overview), languageAvailability: [],
+              image: /^\/[a-zA-Z0-9_.-]+$/.test(path) ? 'https://image.tmdb.org/t/p/w1280' + path : '',
+              genres: (Array.isArray(p.genre_ids) ? p.genre_ids : []).map(function (id) { return map[id]; }).filter(Boolean).slice(0, 2),
+              year: /^\d{4}/.test((kind === 'movie' ? p.release_date : p.first_air_date) || '') ? (kind === 'movie' ? p.release_date : p.first_air_date).slice(0, 4) : '',
+              score: typeof p.vote_average === 'number' && p.vote_average > 0 ? Math.round(p.vote_average * 10) : null};
+          }).filter(function (p) { return !!p.image; }));
+        }
+        var genres = stored(genreKey);
+        if (genres && genres.language === 'pt-BR' && now >= genres.at && now - genres.at < 6 * 3600000 && Array.isArray(genres.items)) { complete(genres.items); return; }
+        tmdb('/genre/' + kind + '/list?language=pt-BR', function (error, data) {
+          if (generation !== revision) return;
+          if (error || !data || !Array.isArray(data.genres)) { finish(error || new Error('Invalid genres')); return; }
+          store(genreKey, {at: Date.now(), language: 'pt-BR', items: data.genres});
+          complete(data.genres);
+        });
+      });
+    }
+
+    return {refresh: refresh,
+      read: function () { return {items: KEY ? entries : [], error: errorMessage}; },
+      reset: function () { revision++; busy = false; retryAt = 0; saved = {}; entries = []; refresh(); }};
+  }
+  var movies = highlights('movie'), series = highlights('tv');
+
+
   var cache = stored('recs') || {};
   var picks = cache.picks || [], listAt = cache.listAt || 0, period = cache.period, listLang = cache.lang || '', stamp = cache.stamp || '';
   var fetchingRecs = false, failedAt = 0, recsError = '';
@@ -653,7 +768,8 @@ var Data = (function () {
     appFor: appFor,
     usable: usable,
     services: services,
-    refresh: function () { refreshWeather(); refreshPrices(); refreshRecs(); },
+    refreshWeather: refreshWeather,
+    refresh: function () { refreshWeather(); refreshPrices(); refreshRecs(); movies.refresh(); series.refresh(); },
     settingsChanged: function () { pricesAt = 0; refreshPrices(); changed(); },
     findCity: findCity,
     /** Another city picked: its weather now (none shown until it comes). */
@@ -667,8 +783,10 @@ var Data = (function () {
     hasKey: function () { return !!KEY; },
     checkKey: checkKey,
     /** A key typed (or removed) on the TV: the picks come again with it, or go. */
-    keyChanged: function () { KEY = Prefs.tmdbKey(); recsError = ''; failedAt = 0; refreshRecs(); changed(); },
+    keyChanged: function () { KEY = Prefs.tmdbKey(); movies.reset(); series.reset(); recsError = ''; failedAt = 0; refreshRecs(); changed(); },
     recsError: function () { return recsError; },
+    movieHighlights: movies.read,
+    seriesHighlights: series.read,
     picks: now,
     showcase: all,
     image: function (path, size) { return path ? 'https://image.tmdb.org/t/p/' + (size || 'w1280') + path : ''; },

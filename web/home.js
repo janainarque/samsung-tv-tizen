@@ -85,8 +85,8 @@
     ['spotify', /spotify/, /spotify/i, ['#1DB954', '#0F7A36']]
   ];
   // Apps shown at once, as on Android: 8 (today's smallest tiles, 178 wide); the shelf scrolls for the rest. The
-  // built-in list keeps 8 too.
-  var SHELF_VISIBLE = 8, FEW_APPS = 8;
+  // Priority favorites are independent of the visible slot count.
+  var SHELF_VISIBLE = 8;
 
   function shelfKey(app) {
     for (var i = 0; i < SHELF.length; i++) if (SHELF[i][1].test(app.id) || SHELF[i][2].test(app.title)) return SHELF[i];
@@ -270,7 +270,15 @@
     if (app.icon) {
       var img = el('img', '', box), url = app.icon;
       word.style.visibility = 'hidden';
-      img.onerror = function () { if (img.parentNode) img.parentNode.removeChild(img); word.style.visibility = ''; };
+      img.onerror = function () {
+        if (app.fallbackIcon && url !== app.fallbackIcon) {
+          url = app.fallbackIcon;
+          img.src = url;
+          return;
+        }
+        if (img.parentNode) img.parentNode.removeChild(img);
+        word.style.visibility = '';
+      };
       if (lifted[url]) { showLogo(img, box, top, bottom, lifted[url], !k); return; }
       if (lifted[url] !== false) {
         img.onload = function () {
@@ -287,12 +295,19 @@
 
   /** shelf_apps in config.properties: the shelf in that order, by id or name (part of it). */
   var WANTED = (CONFIG.shelfApps || []).map(function (s) { return s.toLowerCase(); });
+  // Only match discovered apps; saved favorites and explicit configuration win.
+  var PRIORITY_APPS = [
+    ['9Ur5IzDKqV.TizenYouTube', /^youtube$/i],
+    ['OGLLvqej7u.CrunchyrollWebApp', /crunchyroll/i],
+    ['LnLzvqrcEY.globo', /globoplay/i],
+    ['org.tizen.primevideo', /^(amazon )?prime video$/i],
+    ['AQKO41xyKP.AmazonAlexa', /^(amazon )?alexa$/i],
+    ['org.tizen.browser', /^(web )?browser$/i]
+  ];
+  function shelfSize() { return shelf.length + 1; } // The final action is never a favorite.
+  var appsReturnShelf = null;
 
   function pickShelf() {
-    if (WANTED.length && Prefs.shelfConfig() !== WANTED.join(',')) {
-      Prefs.set('shelf', null);
-      Prefs.set('shelfConfig', WANTED.join(','));
-    }
     var chosen = Prefs.shelf(), out = [];
     if (chosen) {
       for (var i = 0; i < chosen.length; i++) {
@@ -305,28 +320,60 @@
           if ((id.indexOf(WANTED[w]) >= 0 || title.indexOf(WANTED[w]) >= 0) && out.indexOf(apps[k]) < 0) { out.push(apps[k]); break; }
         }
       }
-      if (!out.length) out = apps.slice(0, FEW_APPS);
     } else {
-      for (var s = 0; s < SHELF.length && out.length < FEW_APPS; s++) {
-        for (var a = 0; a < apps.length; a++) {
-          if ((SHELF[s][1].test(apps[a].id) || SHELF[s][2].test(apps[a].title)) && out.indexOf(apps[a]) < 0) { out.push(apps[a]); break; }
-        }
-      }
-      if (!out.length) out = apps.slice(0, FEW_APPS);
+      out = preferredShelf();
     }
     shelf = out;
-    others = apps.filter(function (x) { return shelf.indexOf(x) < 0; });
+    others = apps.slice(); // All discovered apps, including favorites.
+  }
+
+  function preferredShelf() {
+    var out = [];
+    for (var p = 0; p < PRIORITY_APPS.length; p++) {
+      var match = null;
+      for (var d = 0; d < apps.length; d++) if (apps[d].id === PRIORITY_APPS[p][0]) { match = apps[d]; break; }
+      if (!match) for (var f = 0; f < apps.length; f++) if (PRIORITY_APPS[p][1].test(apps[f].title)) { match = apps[f]; break; }
+      if (match && out.indexOf(match) < 0) out.push(match);
+    }
+    return out;
   }
 
   // MARK: - Focus
 
-  var Z = {TOP: 'top', CARDS: 'cards', SHELF: 'shelf', DRAWER: 'drawer', APPS: 'apps', SETTINGS: 'settings', EDIT: 'edit', LANG: 'lang', CITY: 'city', KEY: 'key', ABOUT: 'about'};
+  var Z = {GAMES: 'games', WATCH: 'watch', HIGHLIGHT: 'highlight', ANIME: 'anime', TOP: 'top', CARDS: 'cards', SHELF: 'shelf', DRAWER: 'drawer', APPS: 'apps', SETTINGS: 'settings', EDIT: 'edit', LANG: 'lang', CITY: 'city', KEY: 'key', ABOUT: 'about'};
   var st = {zone: Z.SHELF, top: 0, tab: 0, card: 0, shelf: 0, drawer: 0, grid: 0, row: 0, edit: 0, lang: 0, city: 0, key: 0};
+  var featuredGames = [
+    {id: 'internal-demo-1', title: 'Exemplo interno 01', genre: 'Aventura'},
+    {id: 'internal-demo-2', title: 'Exemplo interno 02', genre: 'Estrat\u00e9gia'},
+    {id: 'internal-demo-3', title: 'Exemplo interno 03', genre: 'Corrida'}
+  ], gameIndex = 0;
+  var attentionPending = 0;
+  var watchCursor = 0, watchDraft = null, watchIndex = -1;
   var cards = [];
+  var highlightTab = 0, highlightCategory = 0;
+  function syncHighlights() {
+    var tabs = $('highlight-tabs');
+    if (!tabs) return;
+    tabs.children[1].disabled = tabs.children[2].disabled = !Data.hasKey();
+    if (!Data.hasKey()) { highlightTab = highlightCategory = 0; SeasonAnime.select('anime'); }
+    SeasonAnime.movies(Data.movieHighlights().items);
+    SeasonAnime.series(Data.seriesHighlights().items);
+    for (var i = 0; i < tabs.children.length; i++) {
+      tabs.children[i].setAttribute('aria-selected', String(i === highlightCategory));
+      setClass(tabs.children[i], 'focus', st.zone === Z.HIGHLIGHT && highlightTab === i);
+    }
+  }
 
   function sheetOpen() { return st.zone === Z.APPS || st.zone === Z.SETTINGS || st.zone === Z.EDIT || st.zone === Z.LANG || st.zone === Z.CITY || st.zone === Z.KEY || st.zone === Z.ABOUT; }
 
+  function animeVisible() {
+    var node = $('season-anime');
+    return !!(node && !node.hidden && node.offsetWidth && node.offsetHeight);
+  }
+
   function updateFocus() {
+    SeasonAnime.setFocused(st.zone === Z.ANIME || st.zone === Z.HIGHLIGHT);
+    syncHighlights();
     var i, list;
     list = $('tabs').children;
     for (i = 0; i < list.length; i++) {
@@ -354,7 +401,12 @@
     if (langHint) langHint.textContent = (st.lang + 1) + ' / ' + languageChoices().length + '  ·  ' + tr('OK picks, Back cancels.');
     focusRows($('citypick'), st.city, st.zone === Z.CITY);
     focusRows($('keypick'), st.key, st.zone === Z.KEY);
-    setClass(body, 'drawer-open', st.zone === Z.DRAWER);
+    list = document.querySelectorAll('#continue-watching .watch-action');
+    for (i = 0; i < list.length; i++) setClass(list[i], 'focus', st.zone === Z.WATCH && watchCursor === i);
+    list = document.querySelectorAll('#featured-games .game');
+    for (i = 0; i < list.length; i++) setClass(list[i], 'focus', st.zone === Z.GAMES && gameIndex === i);
+    setClass(body, 'drawer-games', st.zone === Z.GAMES);
+    setClass(body, 'drawer-open', st.zone === Z.DRAWER || st.zone === Z.WATCH || st.zone === Z.GAMES);
     followSoon();
   }
 
@@ -424,11 +476,12 @@
   // MARK: - Picks and background
 
   function renderCards() {
-    var list = Data.picks(TAB_KIND[st.tab]);
+    // The custom highlight owns this area; original recommendations still serve the screensaver.
+    var list = $('season-anime') ? [] : Data.picks(TAB_KIND[st.tab]);
     var holder = $('cards');
     setClass(body, 'no-picks', !list.length);
     setClass(body, 'no-key', !Data.hasKey());   // as on Android: no title or tabs that could never show anything
-    if (!Data.hasKey() && st.zone === Z.TOP && st.top < 3) st.top = 3;
+    if ((!Data.hasKey() || $('season-anime')) && st.zone === Z.TOP && st.top < 3) st.top = 3;
     var same = list.length === cards.length;
     for (var i = 0; same && i < list.length; i++) same = list[i].id === cards[i].id && list[i].backdrop === cards[i].backdrop && list[i].meta === cards[i].meta;
     if (same && holder.children.length === list.length) return;
@@ -516,7 +569,7 @@
 
   /** On the minute, so the clock never runs late (the 30-second refresh could, by up to 30 s). */
   function tickClock() {
-    renderClock();
+    if (!ambientOn && !document.hidden) renderClock();
     setTimeout(tickClock, 60000 - Date.now() % 60000 + 50);
   }
 
@@ -525,14 +578,16 @@
   var shelfFirst = 0, tileStep = 0, tileLeft = 0;
 
   function renderShelf() {
-    var n = Math.min(shelf.length, SHELF_VISIBLE), gap = 48, pad = 40;
+    var n = Math.min(shelfSize(), SHELF_VISIBLE), gap = 48, pad = 40;
     // 16:9 tiles, as on Android: never taller than 126, and the glass keeps its bottom edge.
-    var tw = Math.min(126 * 16 / 9, (1760 - Math.max(0, n - 1) * gap) / Math.max(1, n)), th = tw * 9 / 16;
+    var tw = Math.min(126 * 16 / 9, (1760 - (SHELF_VISIBLE - 1) * gap) / SHELF_VISIBLE), th = tw * 9 / 16;
     var width = n * tw + Math.max(0, n - 1) * gap, left = (1920 - width) / 2;
+    // Extend the glass to the clock/card grid, keeping tile size, gaps and focus clearance.
+    var platterLeft = Math.min(76, left - pad), platterRight = Math.max(1844, left + width + pad);
     var platter = $('platter');
     platter.style.display = n ? '' : 'none';
-    platter.style.left = (left - pad) + 'px';
-    platter.style.width = (width + 2 * pad) + 'px';
+    platter.style.left = platterLeft + 'px';
+    platter.style.width = (platterRight - platterLeft) + 'px';
     platter.style.top = (814 + 126 - th) + 'px';
     platter.style.height = (th + 2 * pad) + 'px';
     $('quotes').style.right = (1920 - left - width) + 'px';
@@ -540,14 +595,21 @@
     tiles.innerHTML = '';
     tileStep = tw + gap;
     tileLeft = left;
-    shelfFirst = Math.max(0, Math.min(shelfFirst, shelf.length - n));
-    for (var i = 0; i < shelf.length; i++) {
+    shelfFirst = Math.max(0, Math.min(shelfFirst, shelfSize() - n));
+    for (var i = 0; i < shelfSize(); i++) {
       var t = el('div', 'tile', tiles);
       t.style.top = (854 + 126 - th) + 'px';
       t.style.width = tw + 'px';
       t.style.height = th + 'px';
-      face(shelf[i], t, wordFit(shelf[i].title, tw, 30));
+      if (i < shelf.length) face(shelf[i], t, wordFit(shelf[i].title, tw, 30));
+      else {
+        t.className += ' all-apps';
+        paint(t, '#2A2A2E', '#161618'); sym('apps', t, 30);
+        el('div', 'word', t, tr('All Apps'));
+        t.setAttribute('aria-label', tr('All Apps'));
+      }
       hover(t, Z.SHELF, i);
+      if (TV.name === 'browser') t.title = 'Exemplo do preview Chrome; não comprova instalação na TV.';
     }
     // More apps than fit: a small arrow inside the glass's edge on each side that has more, where no tile reaches
     // even focused (inside the screen's safe area, as on Android).
@@ -555,17 +617,17 @@
     for (var a = 0; a < 2; a++) {
       var arrow = sym('chevron_right', platter);
       arrow.className += a ? ' more' : ' more back';
-      arrow.style.left = (a ? width + 2 * pad - 14 : 14) - 8.5 + 'px';
+      arrow.style.left = (a ? platterRight - platterLeft - 14 : 14) - 8.5 + 'px';
       arrow.style.top = (pad + th / 2 - 8.5) + 'px';
     }
-    st.shelf = Math.min(st.shelf, Math.max(0, shelf.length - 1));
+    st.shelf = Math.min(st.shelf, Math.max(0, shelfSize() - 1));
     placeTiles();
   }
 
   /** The row slides (a transform on #tiles, which old TVs animate), and the apps it takes past the glass fade out. */
   function placeTiles() {
-    var row = $('tiles'), tiles = row.children, n = Math.min(shelf.length, SHELF_VISIBLE);
-    for (var i = 0; i < shelf.length; i++) {
+    var row = $('tiles'), tiles = row.children, n = Math.min(shelfSize(), SHELF_VISIBLE);
+    for (var i = 0; i < shelfSize(); i++) {
       var shown = i >= shelfFirst && i < shelfFirst + n;
       tiles[i].style.left = (tileLeft + i * tileStep) + 'px';
       tiles[i].style.opacity = shown ? '' : '0';
@@ -574,14 +636,14 @@
     row.style.webkitTransform = row.style.transform = 'translateX(' + (-shelfFirst * tileStep) + 'px)';
     var arrows = $('platter').children;
     arrows[0].style.visibility = shelfFirst > 0 ? '' : 'hidden';
-    arrows[1].style.visibility = shelfFirst + n < shelf.length ? '' : 'hidden';
+    arrows[1].style.visibility = shelfFirst + n < shelfSize() ? '' : 'hidden';
   }
 
   /** Scrolls the shelf, one app at a time, so the focused app is shown. */
   function revealShelf() {
-    var n = Math.min(shelf.length, SHELF_VISIBLE);
-    var first = Math.max(0, Math.min(Math.max(shelfFirst, st.shelf - n + 1), Math.min(st.shelf, shelf.length - n)));
-    if (first === shelfFirst || !shelf.length) return;
+    var n = Math.min(shelfSize(), SHELF_VISIBLE);
+    var first = Math.max(0, Math.min(Math.max(shelfFirst, st.shelf - n + 1), Math.min(st.shelf, shelfSize() - n)));
+    if (first === shelfFirst || !shelfSize()) return;
     shelfFirst = first;
     placeTiles();
   }
@@ -589,6 +651,9 @@
   // MARK: - Drawer
 
   var drawerItems = [], drawerInputs = 0;
+  // Shared column edges for shortcuts and the two panels below them.
+  var drawerSplit = 80 + 1760 * 0.585;
+  var drawerColumns = [{left: 80, right: drawerSplit - 16}, {left: drawerSplit + 16, right: 1840}];
 
   function renderDrawer() {
     var d = $('drawer');
@@ -602,14 +667,17 @@
     drawerItems.push({label: tr('All Apps'), symbol: 'apps', run: openApps});
     drawerItems.push({label: tr('Home Settings'), symbol: 'settings', run: openSettings});
     if (TV.canOpenSettings) drawerItems.push({label: tr('TV Settings'), symbol: 'tv_settings', run: tvSettings});
-    var n = drawerItems.length, gap = 18, groupGap = 56, groups = drawerInputs > 0 && drawerInputs < n ? 2 : 1;
-    var tw = Math.min(230, (1760 - Math.max(0, n - groups) * gap - (groups - 1) * groupGap) / Math.max(1, n));
-    var xPos = 80;
+    var n = drawerItems.length, gap = 18;
     for (var k = 0; k < n; k++) {
+      var input = k < drawerInputs, column = drawerColumns[input ? 0 : 1];
+      var count = input ? drawerInputs : n - drawerInputs;
+      var index = input ? k : k - drawerInputs;
+      var tw = (column.right - column.left - Math.max(0, count - 1) * gap) / Math.max(1, count);
+      var xPos = column.left + index * (tw + gap);
       if (k === drawerInputs && k > 0) {
-        xPos += groupGap - gap;
         el('div', 'row-title', d, tr('Shortcuts')).style.left = (xPos + 4) + 'px';
       }
+      if (k === 0 && !drawerInputs) el('div', 'row-title', d, tr('Shortcuts')).style.left = (xPos + 4) + 'px';
       if (k === 0 && drawerInputs) el('div', 'row-title', d, tr('Inputs')).style.left = '84px';
       var item = drawerItems[k], key = el('div', 'key glass' + (item.off ? ' off' : ''), d);
       key.style.left = xPos + 'px';
@@ -617,32 +685,45 @@
       sym(item.symbol, key);
       el('div', 'label', key, item.label);
       hover(key, Z.DRAWER, k);
-      xPos += tw + gap;
     }
+    renderGames();
     renderPanels();
     updateFocus();
+  }
+
+  function renderGames() {
+    var section = el('section', '', $('drawer'));
+    section.id = 'featured-games';
+    el('h2', '', section, 'Jogos em destaque');
+    featuredGames.forEach(function (game, index) {
+      var card = el('div', 'game game-' + index, section);
+      card.style.left = (index * (1760 + 32) / 3) + 'px';
+      el('div', 'game-demo', card, 'Demonstra\u00e7\u00e3o interna');
+      el('div', 'game-title', card, game.title);
+      el('div', 'game-genre', card, game.genre);
+      hover(card, Z.GAMES, index);
+    });
   }
 
   function renderPanels() {
     var d = $('drawer');
     var old = d.querySelectorAll('.panel');
     for (var o = 0; o < old.length; o++) d.removeChild(old[o]);
-    var wx = Prefs.weather(), coins = Data.activeCoins(), qt = coins.length > 0;
-    var split = 80 + 1760 * 0.585;
+    var wx = Prefs.weather(), qt = true;
     if (wx) {
       var w = el('div', 'panel glass', d);
       w.id = 'weather';
-      w.style.left = '80px';
-      w.style.width = ((qt ? split - 16 : 1840) - 80) + 'px';
+      w.style.left = drawerColumns[0].left + 'px';
+      w.style.width = (drawerColumns[0].right - drawerColumns[0].left) + 'px';
       renderWeather(w);
     }
     if (qt) {
       var q = el('div', 'panel glass', d);
-      q.id = 'prices';
-      var left = wx ? split + 16 : 80;
+      q.id = 'continue-watching';
+      var left = wx ? drawerColumns[1].left : drawerColumns[0].left;
       q.style.left = left + 'px';
-      q.style.width = (1840 - left) + 'px';
-      renderPrices(q, coins);
+      q.style.width = (drawerColumns[1].right - left) + 'px';
+      renderContinue(q);
     }
   }
 
@@ -676,19 +757,67 @@
     if (w.sunset) { var b = el('span', '', sun); sym('sunset', b); b.appendChild(document.createTextNode(trf('Sunset {time}', {time: Data.time(w.sunset)}))); }
   }
 
-  function renderPrices(card, coins) {
-    el('div', 'head', card, tr('Crypto'));
-    var stale = Data.staleness(Data.pricesAt, 5 * 60000);
-    el('div', 'side', card, stale ? trf('quotes|{ago}', {ago: stale}) : tr('24h change'));
-    for (var j = 0; j < coins.length; j++) {
-      var i = coins[j], row = el('div', 'coin', card);
-      row.style.top = (86 + 52 * j) + 'px';
-      coin(i, row);
-      el('span', 'n', row, Data.coinName(i));
-      el('span', 'p', row, Data.money(Data.prices[i]));
-      var ch = Data.changes[i];
-      if (!isNaN(ch)) el('span', 'c ' + (ch >= 0 ? 'up' : 'down'), row, Data.change(ch));
+  function renderContinue(card) {
+    el('div', 'head', card, 'Continuar assistindo');
+    var items = ContinueWatching.list();
+    if (!items.length) { el('div', 'watch-empty', card, 'Sua lista ainda está vazia.'); return; }
+    items.forEach(function (item, index) {
+      var row = el('div', 'watch-row', card);
+      row.style.top = (80 + index * 68) + 'px';
+      var open = el('div', 'watch-action watch-open', row);
+      if (item.image) {
+        var image = el('img', '', open); image.alt = ''; image.src = item.image;
+        image.onerror = function () { this.style.visibility = 'hidden'; };
+      }
+      el('div', 'watch-name', open, item.title);
+      el('div', 'watch-meta', open, item.category === 'movies' ? 'Filme' : 'T' + item.season + ' · E' + item.episode);
+      hover(open, Z.WATCH, index * 2);
+      hover(el('div', 'watch-action watch-edit', row, 'Editar'), Z.WATCH, index * 2 + 1);
+    });
+    watchCursor = Math.min(watchCursor, items.length * 2 - 1);
+    var actions = card.querySelectorAll('.watch-action');
+    for (var i = 0; i < actions.length; i++) setClass(actions[i], 'focus', st.zone === Z.WATCH && watchCursor === i);
+  }
+
+  function watchApps() { return TV.name === 'browser' ? [] : apps.filter(function (a) { return a.id && a.title; }); }
+  function openWatch(item, index) {
+    if (!item) return;
+    if (index < 0 && ContinueWatching.list().length >= 3) { toast('A lista comporta três títulos. Remova um para adicionar outro.'); return; }
+    watchDraft = ContinueWatching.clean(item); watchIndex = index;
+    if (!watchDraft) return;
+    st.zone = Z.SETTINGS; st.row = 0; renderSettings(); setClass($('settings'), 'open', true); updateFocus();
+  }
+  function finishWatch(remove) {
+    if (remove) ContinueWatching.remove(watchIndex);
+    else if (!ContinueWatching.save(watchDraft, watchIndex)) { toast('Não foi possível salvar.'); return; }
+    watchDraft = null;
+    setClass($('settings'), 'open', false);
+    renderPanels(); st.zone = ContinueWatching.list().length ? Z.WATCH : Z.DRAWER; updateFocus();
+  }
+  function watchRows() {
+    var rows = [];
+    if (watchDraft.category !== 'movies') {
+      ['season', 'episode'].forEach(function (field) {
+        rows.push({label: field === 'season' ? 'Temporada' : 'Episódio', value: String(watchDraft[field]),
+          step: function (d) { watchDraft[field] = Math.max(1, Math.min(999, watchDraft[field] + (d || 1))); }});
+      });
     }
+    var choices = [{id: '', title: 'Nenhum'}].concat(watchApps());
+    var selected = 0;
+    for (var i = 1; i < choices.length; i++) if (choices[i].id === watchDraft.appId) selected = i;
+    rows.push({label: 'Aplicativo', value: choices[selected].title,
+      step: function (d) { watchDraft.appId = choices[(selected + (d || 1) + choices.length) % choices.length].id; }});
+    rows.push({label: 'Salvar', value: '›', step: function () { finishWatch(false); }});
+    if (watchIndex >= 0) rows.push({label: 'Remover da lista', value: '›', step: function () { finishWatch(true); }});
+    return rows;
+  }
+  function activateWatch() {
+    var index = Math.floor(watchCursor / 2), item = ContinueWatching.list()[index];
+    if (!item) return;
+    if (watchCursor % 2) { openWatch(item, index); return; }
+    var installed = watchApps().filter(function (a) { return a.id === item.appId; })[0];
+    if (!installed) { toast('Associe um aplicativo instalado em Editar.'); return; }
+    launcher(installed.id, installed.title)();
   }
 
   function openDrawer() {
@@ -702,7 +831,7 @@
   function closeDrawer() {
     var keys = document.querySelectorAll('#drawer .key');
     st.zone = Z.SHELF;
-    if (shelf.length) st.shelf = nearest($('tiles').children, centerX(keys[st.drawer]));
+    if (shelfSize()) st.shelf = nearest($('tiles').children, centerX(keys[st.drawer]));
     updateFocus();
   }
 
@@ -710,7 +839,7 @@
 
   function renderApps() {
     var sheet = $('apps');
-    sheet.firstChild.textContent = tr('All Apps');
+    sheet.firstChild.textContent = tr('All Apps') + (TV.name === 'browser' ? ' — exemplos do Chrome' : '');
     var grid = sheet.lastChild;
     grid.innerHTML = '';
     for (var i = 0; i < others.length; i++) {
@@ -724,6 +853,7 @@
   }
 
   function openApps() {
+    appsReturnShelf = st.zone === Z.SHELF ? st.shelf : null;
     renderApps();
     st.zone = Z.APPS;
     st.grid = 0;
@@ -733,6 +863,9 @@
   }
 
   function closeSheets() {
+    if (st.zone === Z.APPS && appsReturnShelf !== null) st.shelf = Math.min(appsReturnShelf, shelfSize() - 1);
+    appsReturnShelf = null;
+    watchDraft = null;
     setClass($('apps'), 'open', false);
     setClass($('settings'), 'open', false);
     setClass($('shelfedit'), 'open', false);
@@ -750,6 +883,7 @@
   // MARK: - Home Settings
 
   function settingRows() {
+    if (watchDraft) return watchRows();
     var unit = Prefs.temperature(), theme = Prefs.theme();
     var auto = tr('Automatic'), picked = pickedLanguage();
     var rows = [
@@ -761,8 +895,10 @@
         step: function (d) { cycle('theme', ['auto', 'light', 'dark'], theme, d); checkNight(); }},
       {label: tr('Dim'), value: dimName(),
         step: function (d) { cycle('dim', ['off', 'low', 'medium', 'high', 'auto'], Prefs.dim(), d); applyDim(); }},
-      {label: tr('Screensaver'), value: saverMode() === 'clock' ? tr('Clock') : tr('Photos'),
-        step: function (d) { cycle('saver', ['photos', 'clock'], saverMode(), d); }},
+      {label: 'Ambient', toggle: Prefs.ambientEnabled(),
+        step: function () { Prefs.set('ambientEnabled', !Prefs.ambientEnabled()); idleAt = Date.now(); scheduleAmbient(); }},
+      {label: 'Ambient: espera', value: Prefs.ambientMinutes() + ' min',
+        step: function (d) { cycle('ambientMinutes', [1, 5, 10, 15], Prefs.ambientMinutes(), d); idleAt = Date.now(); scheduleAmbient(); }},
       {label: tr('Picks per tab'), value: String(Prefs.cards()),
         step: function (d) { Prefs.set('cards', 3 + (Prefs.cards() - 3 + (d || 1) + 4) % 4); renderCards(); }},
       {label: tr('Cartoons and anime'), toggle: !Prefs.hideAnimation(),
@@ -807,6 +943,11 @@
         step: function (d) { cycle('openPicks', ['apps', 'nuvio'], open, d); }});
     }
     rows.push({label: tr('Shelf'), value: '›', shelf: true, step: function (d) { if (d >= 0) openShelfEdit(); }});
+    rows.push({label: 'Aplicar os seis favoritos prioritários', value: '›', step: function (d) {
+      if (d < 0) return;
+      Prefs.set('shelf', preferredShelf().map(function (app) { return app.id; }));
+      pickShelf(); renderShelf();
+    }});
     rows.push({label: tr('About this TV'), value: '›', about: true, step: function (d) { if (d >= 0) openAbout(); }});
     if (TV.canOpenSettings) rows.push({label: tr('TV Settings'), value: '›', step: function (d) { if (d >= 0) tvSettings(); }});
     return rows;
@@ -824,7 +965,7 @@
     box.innerHTML = '';
     var title = el('div', 'title', box);
     sym('settings', title);
-    title.appendChild(document.createTextNode(tr('Home Settings')));
+    title.appendChild(document.createTextNode(watchDraft ? watchDraft.title : tr('Home Settings')));
     var list = el('div', 'list', box), holder = el('div', 'rows', list);
     rowsNow = settingRows();
     list.style.height = Math.min(rowsNow.length, 7) * 78 + 'px';
@@ -839,11 +980,12 @@
       }
       hover(row, Z.SETTINGS, i);
     }
-    el('div', 'hint', box, tr('OK or the arrows change the value.'));
+    el('div', 'hint', box, watchDraft ? 'Registro manual. O aplicativo abre sem retomar o episódio automaticamente.' : tr('OK or the arrows change the value.'));
     updateFocus();
   }
 
   function openSettings() {
+    watchDraft = null;
     st.zone = Z.SETTINGS;
     st.row = 0;
     renderSettings();
@@ -1268,7 +1410,10 @@
 
   function launcher(id, name, params) {
     return function () {
+      attentionPending++;
       TV.launch(id, params || null, function (ok) {
+        attentionPending = Math.max(0, attentionPending - 1);
+        idleAt = Date.now(); scheduleAmbient();
         if (!ok) toast(trf("Couldn't open {app}.", {app: name || id}));
       });
     };
@@ -1287,6 +1432,17 @@
 
   function activate() {
     switch (st.zone) {
+      case Z.ANIME:
+        openWatch(SeasonAnime.current(), -1); return;
+      case Z.GAMES:
+        toast('Exemplo interno. Nenhum jogo ser\u00e1 iniciado.'); return;
+      case Z.WATCH:
+        activateWatch(); return;
+      case Z.HIGHLIGHT:
+        highlightCategory = highlightTab;
+        SeasonAnime.select(['anime', 'movies', 'series'][highlightCategory]);
+        updateFocus();
+        return;
       case Z.TOP:
         if (st.top < 3) return;
         var action = TOP_ACTIONS[st.top - 3];
@@ -1301,6 +1457,7 @@
         if (target) launcher(target.app.id, target.app.title, target.params)();
         return;
       case Z.SHELF:
+        if (st.shelf === shelf.length) { openApps(); return; }
         if (shelf[st.shelf]) launcher(shelf[st.shelf].id, shelf[st.shelf].title)();
         return;
       case Z.DRAWER:
@@ -1347,30 +1504,55 @@
     var tiles = $('tiles').children, cardNodes = $('cards').children;
     switch (st.zone) {
       case Z.SHELF:
-        if (dx) st.shelf = Math.max(0, Math.min(shelf.length - 1, st.shelf + dx));
+        if (dx) st.shelf = Math.max(0, Math.min(shelfSize() - 1, st.shelf + dx));
         else if (dy > 0) { openDrawer(); return; }
         else if (dy < 0) {
           if (cards.length) { st.zone = Z.CARDS; st.card = nearest(cardNodes, centerX(tiles[st.shelf])); }
+          else if (animeVisible()) st.zone = Z.ANIME;
           else { st.zone = Z.TOP; st.top = Data.hasKey() ? st.tab : 3; }
         }
+        break;
+      case Z.ANIME:
+        if (dx) SeasonAnime.step(dx);
+        else if (dy < 0) { st.zone = Z.HIGHLIGHT; highlightTab = highlightCategory; }
+        else if (dy > 0) st.zone = Z.SHELF;
+        break;
+      case Z.HIGHLIGHT:
+        if (dx) highlightTab = Data.hasKey() ? Math.max(0, Math.min(2, highlightTab + dx)) : 0;
+        else if (dy > 0) st.zone = Z.ANIME;
+        else if (dy < 0) { st.zone = Z.TOP; if (st.top < 3) st.top = 3; }
         break;
       case Z.CARDS:
         if (dx) st.card = Math.max(0, Math.min(cards.length - 1, st.card + dx));
         else if (dy < 0) { st.zone = Z.TOP; st.top = st.tab; }
-        else if (shelf.length) { st.zone = Z.SHELF; st.shelf = nearest(tiles, centerX(cardNodes[st.card])); }
+        else if (shelfSize()) { st.zone = Z.SHELF; st.shelf = nearest(tiles, centerX(cardNodes[st.card])); }
         break;
       case Z.TOP:
         if (dx) {
-          st.top = Math.max(Data.hasKey() ? 0 : 3, Math.min(3 + TOP_ACTIONS.length - 1, st.top + dx));   // without the picks the tabs can't hold focus
+          st.top = Math.max(Data.hasKey() && !$('season-anime') ? 0 : 3, Math.min(3 + TOP_ACTIONS.length - 1, st.top + dx));   // without the picks the tabs can't hold focus
           if (st.top < 3) selectTab(st.top);   // as on Apple TV: focusing a tab selects it
         } else if (dy > 0) {
           if (cards.length) { st.zone = Z.CARDS; st.card = Math.min(cards.length - 1, st.top < 3 ? 0 : cards.length - 1); }
-          else st.zone = Z.SHELF;
+          else st.zone = animeVisible() ? Z.HIGHLIGHT : Z.SHELF;
         }
+        break;
+      case Z.GAMES:
+        if (dx) gameIndex = Math.max(0, Math.min(featuredGames.length - 1, gameIndex + dx));
+        else if (dy < 0) {
+          st.zone = ContinueWatching.list().length ? Z.WATCH : Z.DRAWER;
+          if (st.zone === Z.WATCH) watchCursor = ContinueWatching.list().length * 2 - 2;
+        }
+        break;
+      case Z.WATCH:
+        if (dy > 0 && watchCursor >= ContinueWatching.list().length * 2 - 2) st.zone = Z.GAMES;
+        else if (dy < 0 && watchCursor < 2) st.zone = Z.DRAWER;
+        else if (dy) watchCursor = Math.max(0, Math.min(ContinueWatching.list().length * 2 - 1, watchCursor + dy * 2));
+        else if (dx) watchCursor = Math.floor(watchCursor / 2) * 2 + (dx > 0 ? 1 : 0);
         break;
       case Z.DRAWER:
         if (dx) st.drawer = Math.max(0, Math.min(drawerItems.length - 1, st.drawer + dx));
         else if (dy < 0) { closeDrawer(); return; }
+        else if (dy > 0) { st.zone = ContinueWatching.list().length ? Z.WATCH : Z.GAMES; watchCursor = 0; }
         break;
       case Z.APPS:
         var g = st.grid + dx + dy * 5;
@@ -1413,8 +1595,9 @@
     if (st.zone === Z.KEY) { if (keyAsking) askRemoveKey(false); else closeKey(); return; }
     if (st.zone === Z.ABOUT) { closeAbout(); return; }
     if (sheetOpen()) { closeSheets(); return; }
-    if (st.zone === Z.DRAWER) { closeDrawer(); return; }
-    if (st.zone !== Z.SHELF && shelf.length) { st.zone = Z.SHELF; updateFocus(); return; }
+    if (st.zone === Z.GAMES) { st.zone = Z.DRAWER; updateFocus(); return; }
+    if (st.zone === Z.DRAWER || st.zone === Z.WATCH || st.zone === Z.GAMES) { closeDrawer(); return; }
+    if (st.zone !== Z.SHELF && shelfSize()) { st.zone = Z.SHELF; updateFocus(); return; }
     TV.back();
   }
 
@@ -1422,15 +1605,17 @@
   function hover(node, zone, index) {
     node.onmouseover = function () {
       if (saverOn || (sheetOpen() !== (zone === Z.APPS || zone === Z.SETTINGS || zone === Z.EDIT || zone === Z.LANG || zone === Z.CITY || zone === Z.KEY || zone === Z.ABOUT))) return;
-      if (zone === Z.DRAWER && st.zone !== Z.DRAWER) return;
-      if (zone !== Z.DRAWER && st.zone === Z.DRAWER && zone !== Z.SHELF) return;
-      if (zone === Z.TOP && index < 3 && !Data.hasKey()) return;   // the tabs are hidden without the picks
-      if (zone === Z.SHELF && st.zone === Z.DRAWER) closeDrawer();
+      if ((zone === Z.DRAWER || zone === Z.WATCH || zone === Z.GAMES) && st.zone !== Z.DRAWER && st.zone !== Z.WATCH && st.zone !== Z.GAMES) return;
+      if (zone !== Z.DRAWER && zone !== Z.WATCH && zone !== Z.GAMES && (st.zone === Z.DRAWER || st.zone === Z.WATCH || st.zone === Z.GAMES) && zone !== Z.SHELF) return;
+      if (zone === Z.TOP && index < 3 && (!Data.hasKey() || $('season-anime'))) return;   // the tabs are hidden without the picks
+      if (zone === Z.SHELF && (st.zone === Z.DRAWER || st.zone === Z.WATCH || st.zone === Z.GAMES)) closeDrawer();
       st.zone = zone;
       if (zone === Z.TOP) { st.top = index; if (index < 3) selectTab(index); }
       else if (zone === Z.CARDS) st.card = index;
       else if (zone === Z.SHELF) st.shelf = index;
       else if (zone === Z.DRAWER) st.drawer = index;
+      else if (zone === Z.WATCH) watchCursor = index;
+      else if (zone === Z.GAMES) gameIndex = index;
       else if (zone === Z.APPS) st.grid = index;
       else if (zone === Z.SETTINGS) st.row = index;
       else if (zone === Z.EDIT) st.edit = index;
@@ -1466,7 +1651,7 @@
     try { localStorage.setItem('fmtv.night', night ? 'true' : 'false'); } catch (e) {}   // for index.html, next start
   }
 
-  var saverOn = false, idleAt = Date.now(), saverIndex = 0, saverTimer = 0, saverPick = null, SAVER_AFTER = 5 * 60000;
+  var saverOn = false, idleAt = Date.now(), idleTimer = 0, saverIndex = 0, saverTimer = 0, saverPick = null;
 
   /** "photos" (the picks' photos, as it always was) or "clock": what the screen shows when nobody touches it. */
   function saverMode() { return Prefs.saver(); }
@@ -1549,46 +1734,82 @@
 
   // MARK: - The clock screensaver: a clock, the date and the weather, drifting slowly for OLED panels
 
-  var ambientOn = false, ambientTimer = 0;
+  var ambientOn = false, ambientTimer = 0, ambientMinute = -1, ambientWeather = null, ambientDirty = false, wakeUntil = 0, wakeKey = null;
+
+  function scheduleAmbient() {
+    clearTimeout(idleTimer); idleTimer = 0;
+    if (document.hidden || !Prefs.ambientEnabled()) return;
+    idleTimer = setTimeout(checkAmbientIdle, Math.max(1, Prefs.ambientMinutes() * 60000 - (Date.now() - idleAt)));
+  }
+  function checkAmbientIdle() {
+    idleTimer = 0;
+    if (document.hidden || !Prefs.ambientEnabled() || ambientOn) return;
+    if (sheetOpen() || saverOn || attentionPending) { idleAt = Date.now(); scheduleAmbient(); return; }
+    showAmbient();
+  }
 
   function showAmbient() {
-    if (ambientOn) return;
+    if (ambientOn || document.hidden || sheetOpen() || attentionPending) return;
+    clearTimeout(idleTimer); idleTimer = 0;
+    SeasonAnime.setSuspended(true);
+    ambientMinute = -1; ambientWeather = null;
     var a = $('ambient');
     a.innerHTML = '';
     var shift = el('div', 'shift', a);
-    el('div', 'clock', shift);
     el('div', 'date', shift);
+    el('div', 'clock', shift);
     var side = el('div', 'side', shift);
+    el('span', 'sym', side);
     el('div', 'temp', side);
     el('div', 'cond', side);
+    el('div', 'city', side);
     ambientOn = true;
     setClass(a, 'on', true);
-    ambientTimer = setInterval(tickAmbient, 30000);
+    ambientTimer = setInterval(tickAmbient, 1000);
     tickAmbient();
   }
 
   function tickAmbient() {
     if (!ambientOn) return;
     var a = $('ambient'), d = new Date(), w = Prefs.weather() ? Data.weather : null;
+    if (Math.floor(d.getTime() / 60000) === ambientMinute && w === ambientWeather) return;
+    ambientWeather = w;
     a.querySelector('.clock').textContent = formatDate('format|h:mm', d.getTime());
     a.querySelector('.date').textContent = formatDate('format|EEEE, MMMM d', d.getTime());
     // The forecast as it is now (a new one comes every 30 minutes), and only with the weather card on, as on Android.
     a.querySelector('.temp').textContent = w ? Data.degrees(w.temp) : '';
     a.querySelector('.cond').textContent = w ? Data.condition(w.code, w.isDay) : '';
-    // A clock that never moves burns into an OLED: the drift of Android's clock without photos (40 × 26 px, 10 minutes).
-    var phase = 2 * Math.PI * (d.getTime() / 1000 % 600) / 600, shift = a.querySelector('.shift');
-    shift.style.webkitTransform = shift.style.transform =
-      'translate(' + Math.round(40 * Math.sin(phase)) + 'px,' + Math.round(26 * Math.sin(2 * phase + 0.7)) + 'px)';
+    a.querySelector('.city').textContent = w ? Data.city || '' : '';
+    var icon = a.querySelector('.side .sym');
+    icon.style.display = w ? '' : 'none';
+    if (w) icon.style.webkitMaskImage = icon.style.maskImage = 'url(symbols/' + Data.symbol(w.code, w.isDay) + '.png)';
+    // One bounded position per minute; this reduces static pixel exposure, not all burn-in risk.
+    var minute = Math.floor(d.getTime() / 60000);
+    if (minute !== ambientMinute) {
+      ambientMinute = minute;
+      var positions = [[-32, -18], [24, 16], [-16, 22], [32, -20], [0, 0]];
+      var position = positions[minute % positions.length], shift = a.querySelector('.shift');
+      shift.style.webkitTransform = shift.style.transform = 'translate(' + position[0] + 'px,' + position[1] + 'px)';
+    }
   }
 
   function hideAmbient() {
+    var wasOn = ambientOn;
     ambientOn = false;
     clearInterval(ambientTimer);
+    ambientTimer = 0;
     setClass($('ambient'), 'on', false);
+    SeasonAnime.setSuspended(false);
+    if (wasOn && !document.hidden) {
+      renderClock();
+      if (ambientDirty) { ambientDirty = false; renderAll(); }
+      else updateFocus();
+    }
   }
 
   function poke(ok) {
     idleAt = Date.now();
+    scheduleAmbient();
     if (ambientOn) { hideAmbient(); return true; }
     if (!saverOn) return false;
     var target = ok && Prefs.saverWatch() ? pickTarget(saverPick) : null;
@@ -1597,11 +1818,30 @@
     return true;
   }
 
+  var highlightTabs = $('highlight-tabs');
+  if (highlightTabs) {
+    for (var highlightIndex = 0; highlightIndex < highlightTabs.children.length; highlightIndex++) {
+      (function (index) {
+        highlightTabs.children[index].onclick = function () {
+          if (this.disabled) return;
+          st.zone = Z.HIGHLIGHT; highlightTab = index; activate();
+        };
+      }(highlightIndex));
+    }
+  }
+
   // MARK: - Keys
 
   document.addEventListener('keydown', function (e) {
     var k = e.keyCode;
-    if (poke(k === TV.keys.ok)) { e.preventDefault(); return; }   // the first press only wakes the screen (or OK watches)
+    if (wakeKey === k) { if (k < 256 || k === TV.keys.back) e.preventDefault(); return; }
+    var wakingAmbient = ambientOn;
+    if (poke(k === TV.keys.ok)) {
+      if (wakingAmbient) wakeKey = k;
+      // Leave unregistered system keys (including Home/Power) to the OS.
+      if (k < 256 || k === TV.keys.back) e.preventDefault();
+      return;
+    }   // the first press only wakes the screen (or OK watches)
     if (typing(k)) return;
     if (k === TV.keys.left) move(-1, 0);
     else if (k === TV.keys.right) move(1, 0);
@@ -1612,7 +1852,19 @@
     else return;
     e.preventDefault();
   });
-  document.addEventListener('mousemove', function () { poke(); });
+  document.addEventListener('keyup', function (e) { if (wakeKey === e.keyCode) wakeKey = null; });
+  document.addEventListener('mousemove', function () { if (poke()) wakeUntil = Date.now() + 700; });
+  function pointerActivity(e) {
+    if (poke()) { wakeUntil = Date.now() + 700; e.preventDefault(); e.stopImmediatePropagation(); }
+  }
+  document.addEventListener('mousedown', pointerActivity, true);
+  document.addEventListener('touchstart', pointerActivity, true);
+  document.addEventListener('click', function (e) {
+    if (Date.now() < wakeUntil) { e.preventDefault(); e.stopImmediatePropagation(); return; }
+    pointerActivity(e);
+  }, true);
+  document.addEventListener('wheel', pointerActivity, true);
+  document.addEventListener('input', function () { poke(); }, true);
 
   /**
    * In a text field, the keys type (← → move in the text, Delete erases). OK or the keyboard's Done searches (or saves); Back,
@@ -1676,6 +1928,8 @@
   }
 
   Data.onChange(function () {
+    if (ambientOn || document.hidden) { ambientDirty = true; if (ambientOn) tickAmbient(); return; }
+    syncHighlights();
     renderQuotes();
     renderCards();
     renderPanels();
@@ -1701,15 +1955,15 @@
   document.addEventListener('webOSRelaunch', reopened);   // LG: opened again while running
   window.addEventListener('appcontrol', reopened);        // Samsung: the same
   document.addEventListener('visibilitychange', function () {
-    if (document.hidden) { hideSaver(); hideAmbient(); return; }
-    idleAt = Date.now();
+    if (document.hidden) { wakeKey = null; clearTimeout(idleTimer); idleTimer = 0; hideSaver(); hideAmbient(); return; }
+    idleAt = Date.now(); scheduleAmbient();
     loadApps(function () { renderShelf(); renderDrawer(); updateFocus(); Data.refresh(); });
   });
 
   I18N.set(Prefs.language());
   checkNight();   // now, from the last forecast: not after the TV lists its apps, with the day look until then
-  // LG's screensaver waits only when ours will show: not under a sheet (ours waits there), and not without photos.
-  TV.holdScreenSaver(function () { return !sheetOpen() && (saverMode() === 'clock' || saverPhotos().length > 0); });
+  // Keep native screen and energy protections enabled.
+  scheduleAmbient();
   fit();
   renderTop();
   applyDim();
@@ -1720,17 +1974,14 @@
     Data.refresh();
   });
   setInterval(function () {
-    checkNight();
-    Data.refresh();
-    applyDim();   // automatic: medium from 22:00, off again at 07:00
-    if (!saverOn && !ambientOn && !sheetOpen() && Date.now() - idleAt > SAVER_AFTER) {
-      if (saverMode() === 'clock') showAmbient(); else showSaver();
-    }
+    if (document.hidden) return;
+    if (ambientOn) { Data.refreshWeather(); return; }
+    checkNight(); Data.refresh(); applyDim();
     if (saverOn) tickSaverClock($('saver').querySelector('.clock'));
-    if (ambientOn) tickAmbient();
   }, 30000);
 
   // For the browser preview and tests.
   window.FreeMyTV = {state: st, move: move, activate: activate, back: back, showSaver: showSaver, hideSaver: hideSaver, toast: toast,
-    showAmbient: showAmbient, hideAmbient: hideAmbient, applyDim: applyDim};
+    applyDim: applyDim};
+  if (TV.name === 'browser') { FreeMyTV.showAmbient = showAmbient; FreeMyTV.hideAmbient = hideAmbient; }
 })();
